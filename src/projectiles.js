@@ -110,7 +110,8 @@ export function updateProjectiles(ts, dt) {
 export function checkProjectileCollisions() {
   const obstacles = getObstacles();
   const config = PROJECTILE_CONFIG[player.starter];
-  if (!config) return;
+  if (!config) return 0;
+  let scoreBonus = 0;
 
   for (let i = projectiles.length - 1; i >= 0; i--) {
     const p = projectiles[i];
@@ -152,8 +153,10 @@ export function checkProjectileCollisions() {
 
     if (hit) {
       projectiles.splice(i, 1);
+      scoreBonus += 2;
     }
   }
+  return scoreBonus;
 }
 
 export function drawProjectiles(ctx, ts) {

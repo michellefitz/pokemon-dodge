@@ -144,7 +144,7 @@ export function updateGame(ts, dt) {
 
   // ── Projectiles ─────────────────────────────────────────
   updateProjectiles(ts, dt);
-  checkProjectileCollisions();
+  score += checkProjectileCollisions();
 
   // ── Random events ────────────────────────────────────────
   if (wave.eventsEnabled) {
