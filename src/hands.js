@@ -65,7 +65,7 @@ function onHandResults(results) {
     hand.x = (1 - middleMCP.x) * W;
     hand.y = middleMCP.y * H;
 
-    // Hand is "raised" if wrist is in upper 70% of frame
-    hand.active = wrist.y < 0.7;
+    // Hand is "raised" if wrist is above bottom 15% of frame
+    hand.active = wrist.y < 0.85;
   }
 }

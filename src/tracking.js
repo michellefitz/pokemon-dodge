@@ -50,15 +50,30 @@ export function initTracking(canvas) {
 
   faceMesh.onResults(results => {
     if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
-      const nose = results.multiFaceLandmarks[0][1];
-      // Amplify head movement around center — nose.x typically stays
-      // within ~0.3-0.7 range on a laptop webcam, so we expand that
-      // to fill the full canvas width. sensitivity > 1 = more responsive.
+      const lm = results.multiFaceLandmarks[0];
+      const nose = lm[1];        // nose tip
+      const forehead = lm[10];   // top of forehead
+      const chin = lm[152];      // bottom of chin
+
+      // ── X: side-to-side head movement (amplified) ──
       const sensitivity = 2.5;
-      const centered = (1 - nose.x) - 0.5; // -0.5 to 0.5, mirrored
-      const amplified = centered * sensitivity + 0.5; // re-center to 0..1
+      const centered = (1 - nose.x) - 0.5;
+      const amplified = centered * sensitivity + 0.5;
       tracking.x = Math.max(0, Math.min(W, amplified * W));
-      tracking.y = nose.y * H * 0.9 + 20;
+
+      // ── Y: head tilt (pitch) instead of actual Y position ──
+      // Measure where nose sits between forehead and chin.
+      // Neutral ≈ 0.35 (nose is closer to forehead than chin).
+      // Tilt forward → ratio increases → move down.
+      // Tilt back → ratio decreases → move up.
+      const faceHeight = chin.y - forehead.y;
+      const noseRatio = faceHeight > 0.01 ? (nose.y - forehead.y) / faceHeight : 0.35;
+      const neutralRatio = 0.35;
+      const tiltSensitivity = 3.0;
+      const tiltOffset = (noseRatio - neutralRatio) * tiltSensitivity;
+      // Map tilt to vertical position: center of play area ± tilt
+      const baseY = H * 0.55;
+      tracking.y = Math.max(40, Math.min(H - 40, baseY + tiltOffset * H * 0.5));
       if (!tracking.active) {
         tracking.active = true;
         tracking.mode = 'camera';
