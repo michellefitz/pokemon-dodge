@@ -25,11 +25,11 @@ export function initHands() {
   handsInstance.onResults(onHandResults);
 
   // Register with the Camera's frame loop via tracking.js
-  // Process every 3rd frame (~10fps) to keep it lightweight
+  // Process every 2nd frame (~15fps) for responsive hand tracking
   let sending = false;
   addFrameHandler(async (video) => {
     frameCount++;
-    if (frameCount % 3 !== 0) return; // skip 2 out of 3 frames
+    if (frameCount % 2 !== 0) return; // skip every other frame
     if (sending) return;
     sending = true;
     try {

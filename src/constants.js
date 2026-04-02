@@ -17,7 +17,7 @@ export const COLORS = {
 export const BASE_LIVES = 3;
 export const PLAYER_BASE_SIZE = 28;
 export const PLAYER_SIZE_GROWTH = 4;
-export const SMOOTHING_FACTOR = 0.18;
+export const SMOOTHING_FACTOR = 0.35;
 
 // Waves
 export const WAVES = [

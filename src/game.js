@@ -3,7 +3,9 @@ import { player, updatePlayer, drawPlayer, shouldEvolve, evolve, finishEvolving,
 import { getObstacles, clearObstacles, spawnObstacle, updateObstacles, checkCollisions, drawObstacles, setOnDodgedCallback } from './obstacles.js';
 import { clearBerries, spawnBerry, updateBerries, checkBerryCollisions, drawBerries, getActiveEffect } from './powerups.js';
 import { resetEvents, trySpawnEvent, updateEvent, isControlsReversed, drawEvent, getActiveEvent, getSnorlaxBlockRect } from './events.js';
-import { drawStarfield, updateAndDrawParticles, drawHUD, applyScreenEffects, triggerShake, triggerFlash, spawnParticles } from './renderer.js';
+import { drawStarfield, updateAndDrawParticles, drawHUD, applyScreenEffects, triggerShake, triggerFlash, spawnParticles, drawTrackingFeedback } from './renderer.js';
+import { tracking } from './tracking.js';
+import { handState } from './hands.js';
 import { startEvolutionCutscene, updateEvolutionCutscene, drawEvolutionCutscene } from './screens.js';
 import { updateProjectiles, checkProjectileCollisions, drawProjectiles, drawEnergyBars, resetProjectiles } from './projectiles.js';
 
@@ -218,6 +220,9 @@ export function drawGame(ctx, ts, dt) {
   const effectTimer   = activeEffect ? activeEffect.timer   : 0;
   const effectMaxTime = activeEffect ? activeEffect.maxTime : 0;
   drawHUD(ctx, score, player.lives, wave.name, effectTimer, effectMaxTime);
+
+  // ── Tracking feedback (subtle indicators) ──────────────────
+  drawTrackingFeedback(ctx, ts, tracking, handState);
 
   // ── Evolution cutscene overlay ───────────────────────────
   if (evolving) {

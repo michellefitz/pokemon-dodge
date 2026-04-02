@@ -280,3 +280,89 @@ export function drawHUD(ctx, score, lives, waveName, effectTimer, effectMaxTime)
 
   ctx.restore();
 }
+
+// ── Tracking feedback overlay ───────────────────────────────
+/**
+ * Draw subtle indicators showing raw tracked positions.
+ * Helps the player understand what the camera is detecting.
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {number} ts
+ * @param {{ x: number, y: number, active: boolean, mode: string }} headTracking
+ * @param {{ left: { active: boolean, x: number, y: number }, right: { active: boolean, x: number, y: number } }} hands
+ */
+export function drawTrackingFeedback(ctx, ts, headTracking, hands) {
+  ctx.save();
+
+  // ── Head tracking crosshair (raw position before smoothing) ──
+  if (headTracking.active) {
+    const hx = headTracking.x;
+    const hy = headTracking.y;
+    ctx.globalAlpha = 0.25;
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 1;
+    // Small crosshair
+    ctx.beginPath();
+    ctx.moveTo(hx - 8, hy);
+    ctx.lineTo(hx + 8, hy);
+    ctx.moveTo(hx, hy - 8);
+    ctx.lineTo(hx, hy + 8);
+    ctx.stroke();
+    // Tiny dot
+    ctx.beginPath();
+    ctx.arc(hx, hy, 2, 0, Math.PI * 2);
+    ctx.fillStyle = '#fff';
+    ctx.fill();
+  }
+
+  // ── Hand indicators ──────────────────────────────────────────
+  const drawHand = (hand, label) => {
+    if (!hand.active && hand.x === 0 && hand.y === 0) return; // never detected
+
+    const hx = hand.x;
+    const hy = hand.y;
+
+    if (hand.active) {
+      // Active hand — bright indicator with pulsing ring
+      ctx.globalAlpha = 0.5;
+      ctx.strokeStyle = '#EF9F27';
+      ctx.lineWidth = 2;
+      const pulse = 8 + Math.sin(ts * 0.008) * 3;
+      ctx.beginPath();
+      ctx.arc(hx, hy, pulse, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Filled dot
+      ctx.globalAlpha = 0.6;
+      ctx.fillStyle = '#EF9F27';
+      ctx.beginPath();
+      ctx.arc(hx, hy, 4, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Label
+      ctx.globalAlpha = 0.4;
+      ctx.font = '10px monospace';
+      ctx.fillStyle = '#EF9F27';
+      ctx.textAlign = 'center';
+      ctx.fillText(label, hx, hy - 16);
+    } else {
+      // Detected but not raised — dim indicator
+      ctx.globalAlpha = 0.15;
+      ctx.strokeStyle = '#888';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(hx, hy, 8, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.globalAlpha = 0.12;
+      ctx.font = '9px monospace';
+      ctx.fillStyle = '#888';
+      ctx.textAlign = 'center';
+      ctx.fillText(label + ' (low)', hx, hy - 12);
+    }
+  };
+
+  drawHand(hands.left, 'L');
+  drawHand(hands.right, 'R');
+
+  ctx.restore();
+}
