@@ -65,7 +65,7 @@ function onHandResults(results) {
     hand.x = (1 - middleMCP.x) * W;
     hand.y = middleMCP.y * H;
 
-    // Hand is "raised" if wrist is above bottom 15% of frame
-    hand.active = wrist.y < 0.85;
+    // Hand is active whenever detected — no height threshold
+    hand.active = true;
   }
 }

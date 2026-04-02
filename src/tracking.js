@@ -69,11 +69,11 @@ export function initTracking(canvas) {
       const faceHeight = chin.y - forehead.y;
       const noseRatio = faceHeight > 0.01 ? (nose.y - forehead.y) / faceHeight : 0.35;
       const neutralRatio = 0.35;
-      const tiltSensitivity = 3.0;
+      const tiltSensitivity = 5.0;
       const tiltOffset = (noseRatio - neutralRatio) * tiltSensitivity;
-      // Map tilt to vertical position: center of play area ± tilt
-      const baseY = H * 0.55;
-      tracking.y = Math.max(40, Math.min(H - 40, baseY + tiltOffset * H * 0.5));
+      // Map tilt to full vertical range
+      const baseY = H * 0.5;
+      tracking.y = Math.max(30, Math.min(H - 30, baseY + tiltOffset * H));
       if (!tracking.active) {
         tracking.active = true;
         tracking.mode = 'camera';
