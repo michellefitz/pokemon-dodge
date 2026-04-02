@@ -29,7 +29,7 @@ document.addEventListener('keydown', (e) => {
         selectStarter(chosen);
         resetGame();
         if (!trackingInitialized) {
-          initTracking();
+          initTracking(canvas);
           trackingInitialized = true;
         }
         state = 'playing';

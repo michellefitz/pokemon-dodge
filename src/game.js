@@ -2,7 +2,7 @@ import { W, H, WAVES, COLORS } from './constants.js';
 import { player, updatePlayer, drawPlayer, shouldEvolve, evolve, finishEvolving, getHitboxRadius } from './player.js';
 import { getObstacles, clearObstacles, spawnObstacle, updateObstacles, checkCollisions, drawObstacles, setOnDodgedCallback } from './obstacles.js';
 import { clearBerries, spawnBerry, updateBerries, checkBerryCollisions, drawBerries, getActiveEffect } from './powerups.js';
-import { resetEvents, trySpawnEvent, updateEvent, isControlsReversed, drawEvent, getActiveEvent } from './events.js';
+import { resetEvents, trySpawnEvent, updateEvent, isControlsReversed, drawEvent, getActiveEvent, getSnorlaxBlockRect } from './events.js';
 import { drawStarfield, updateAndDrawParticles, drawHUD, applyScreenEffects, triggerShake, triggerFlash, spawnParticles } from './renderer.js';
 import { startEvolutionCutscene, updateEvolutionCutscene, drawEvolutionCutscene } from './screens.js';
 
@@ -123,7 +123,7 @@ export function updateGame(ts, dt) {
   const reversed = isControlsReversed();
 
   // ── Player ──────────────────────────────────────────────
-  updatePlayer(dt, reversed);
+  updatePlayer(dt, reversed, getSnorlaxBlockRect());
 
   // ── Spawn ────────────────────────────────────────────────
   if (ts - lastSpawnTime >= wave.spawnInterval) {

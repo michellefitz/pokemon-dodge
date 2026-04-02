@@ -79,8 +79,8 @@ export const OBSTACLE_SPEEDS = {
   gastly: 2.5,
   pidgey: 4.0,
   ember: 3.5,
-  watergun: 0,
-  vinewhip: 0,
+  watergun: 3.5,
+  vinewhip: 3.0,
 };
 
 // Obstacle hitbox radii

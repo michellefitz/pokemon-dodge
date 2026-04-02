@@ -91,7 +91,7 @@ export function finishEvolving() {
   player.evolving = false;
 }
 
-export function updatePlayer(dt, controlsReversed = false) {
+export function updatePlayer(dt, controlsReversed = false, blockRect = null) {
   const def = getStarterDef();
   const speedBonus = def ? def.speedBonus : 1.0;
 
@@ -105,6 +105,22 @@ export function updatePlayer(dt, controlsReversed = false) {
   const radius = getHitboxRadius();
   player.smoothX = Math.max(radius, Math.min(W - radius, player.smoothX));
   player.smoothY = Math.max(radius, Math.min(H - radius, player.smoothY));
+
+  // Push player out of Snorlax blocking zone
+  if (blockRect) {
+    const left = blockRect.x;
+    const right = blockRect.x + blockRect.w;
+    if (player.smoothX > left + radius && player.smoothX < right - radius) {
+      // Player center is inside block zone — push to nearest edge
+      const distLeft = player.smoothX - left;
+      const distRight = right - player.smoothX;
+      if (distLeft < distRight) {
+        player.smoothX = left;
+      } else {
+        player.smoothX = right;
+      }
+    }
+  }
 
   player.x = player.smoothX;
   player.y = player.smoothY;
