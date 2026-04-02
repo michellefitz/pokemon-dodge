@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Head Dodge — MediaPipe Demo</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #0f0f1a; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; font-family: system-ui, sans-serif; }
+h1 { color: #fff; font-size: 18px; font-weight: 400; margin-bottom: 12px; letter-spacing: 0.05em; }
+#app { position: relative; width: 700px; }
+#gameCanvas { width: 100%; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); display: block; }
+#videoEl { display: none; }
+#overlay { position: absolute; inset: 0; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(0,0,0,0.75); color: #fff; gap: 12px; }
+#overlay h2 { font-size: 26px; font-weight: 500; }
+#overlay p { font-size: 14px; color: rgba(255,255,255,0.65); text-align: center; max-width: 320px; line-height: 1.6; }
+#startBtn { margin-top: 8px; padding: 11px 32px; border-radius: 8px; border: none; background: #378ADD; color: #fff; font-size: 15px; cursor: pointer; font-family: inherit; }
+#startBtn:hover { background: #185FA5; }
+#hud { position: absolute; top: 12px; left: 0; right: 0; display: flex; justify-content: space-between; padding: 0 16px; pointer-events: none; }
+#hud span { font-size: 14px; font-weight: 500; color: #fff; background: rgba(0,0,0,0.45); padding: 4px 12px; border-radius: 6px; }
+#statusDot { position: absolute; bottom: 12px; left: 12px; display: flex; align-items: center; gap: 6px; pointer-events: none; }
+#dot { width: 8px; height: 8px; border-radius: 50%; background: #888; transition: background 0.3s; }
+#dot.active { background: #1D9E75; }
+#statusLabel { font-size: 12px; color: rgba(255,255,255,0.6); }
+</style>
+</head>
+<body>
+<h1>head dodge &mdash; mediapipe demo</h1>
+<div id="app">
+  <canvas id="gameCanvas" width="700" height="430"></canvas>
+  <video id="videoEl" autoplay playsinline width="700" height="430"></video>
+  <div id="hud">
+    <span id="scoreEl">score: 0</span>
+    <span id="livesEl">lives: 3</span>
+  </div>
+  <div id="statusDot"><div id="dot"></div><span id="statusLabel">camera off</span></div>
+  <div id="overlay">
+    <h2>head dodge</h2>
+    <p>move your head left and right to dodge falling balls. uses your webcam — nothing is sent anywhere.</p>
+    <button id="startBtn">start game</button>
+    <p id="statusMsg" style="font-size:12px;color:rgba(255,255,255,0.4);min-height:18px;"></p>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3/camera_utils.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4/face_mesh.js"></script>
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const video = document.getElementById('videoEl');
+const overlay = document.getElementById('overlay');
+const scoreEl = document.getElementById('scoreEl');
+const livesEl = document.getElementById('livesEl');
+const dot = document.getElementById('dot');
+const statusLabel = document.getElementById('statusLabel');
+const statusMsg = document.getElementById('statusMsg');
+
+const W = 700, H = 430;
+
+let headX = W / 2, headY = H * 0.75;
+let smoothX = W / 2, smoothY = H * 0.75;
+let trackingActive = false;
+let gameRunning = false;
+let score = 0, lives = 3;
+let balls = [], frameId;
+let lastSpawn = 0, spawnInterval = 1200;
+
+function spawnBall() {
+  const colors = ['#E24B4A','#EF9F27','#378ADD','#1D9E75','#D4537E','#9F77DD'];
+  balls.push({
+    x: 40 + Math.random() * (W - 80),
+    y: -20,
+    r: 14 + Math.random() * 10,
+    speed: 2.5 + Math.random() * 2 + score * 0.01,
+    color: colors[Math.floor(Math.random() * colors.length)]
+  });
+}
+
+function drawHead(x, y, tracked) {
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(x, y, 28, 0, Math.PI * 2);
+  ctx.fillStyle = tracked ? '#1D9E75' : '#888780';
+  ctx.fill();
+  ctx.strokeStyle = tracked ? '#0F6E56' : '#5F5E5A';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.fillStyle = '#fff';
+  ctx.beginPath(); ctx.arc(x - 9, y - 6, 6, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(x + 9, y - 6, 6, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#2C2C2A';
+  ctx.beginPath(); ctx.arc(x - 9, y - 6, 3, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(x + 9, y - 6, 3, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath();
+  ctx.arc(x, y + 8, 10, 0, Math.PI, false);
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.restore();
+}
+
+function checkCollision(ball) {
+  const dx = ball.x - smoothX;
+  const dy = ball.y - smoothY;
+  return Math.sqrt(dx * dx + dy * dy) < ball.r + 28;
+}
+
+function gameLoop(ts) {
+  if (!gameRunning) return;
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#1a1a2e';
+  ctx.fillRect(0, 0, W, H);
+  for (let i = 0; i < 80; i++) {
+    const sx = ((i * 137 + 31) % W);
+    const sy = ((i * 83 + 17) % H);
+    const sz = 0.3 + (i % 4) * 0.4;
+    ctx.beginPath(); ctx.arc(sx, sy, sz, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255,255,255,0.25)'; ctx.fill();
+  }
+
+  smoothX += (headX - smoothX) * 0.2;
+  smoothY += (headY - smoothY) * 0.2;
+
+  if (ts - lastSpawn > spawnInterval) {
+    spawnBall();
+    lastSpawn = ts;
+    spawnInterval = Math.max(450, 1200 - score * 5);
+  }
+
+  balls = balls.filter(b => {
+    b.y += b.speed;
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+    ctx.fillStyle = b.color;
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    if (checkCollision(b)) {
+      lives--;
+      livesEl.textContent = 'lives: ' + lives;
+      if (lives <= 0) { endGame(); return false; }
+      return false;
+    }
+    if (b.y > H + 30) {
+      score++;
+      scoreEl.textContent = 'score: ' + score;
+      return false;
+    }
+    return true;
+  });
+
+  drawHead(smoothX, smoothY, trackingActive);
+  frameId = requestAnimationFrame(gameLoop);
+}
+
+function endGame() {
+  gameRunning = false;
+  cancelAnimationFrame(frameId);
+  overlay.style.display = 'flex';
+  overlay.innerHTML = `
+    <h2>game over</h2>
+    <p style="font-size:20px;font-weight:500;color:#EF9F27;margin:0;">score: ${score}</p>
+    <p>dodge the falling balls with your head</p>
+    <button id="startBtn" onclick="startGame()" style="margin-top:8px;padding:11px 32px;border-radius:8px;border:none;background:#378ADD;color:#fff;font-size:15px;cursor:pointer;font-family:inherit;">play again</button>
+  `;
+}
+
+function startGame() {
+  score = 0; lives = 3; balls = []; lastSpawn = 0; spawnInterval = 1200;
+  scoreEl.textContent = 'score: 0';
+  livesEl.textContent = 'lives: 3';
+  gameRunning = true;
+  overlay.style.display = 'none';
+  frameId = requestAnimationFrame(gameLoop);
+}
+
+function initMediaPipe() {
+  statusMsg.textContent = 'loading mediapipe...';
+  const faceMesh = new FaceMesh({
+    locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4/${f}`
+  });
+  faceMesh.setOptions({
+    maxNumFaces: 1,
+    refineLandmarks: false,
+    minDetectionConfidence: 0.5,
+    minTrackingConfidence: 0.5
+  });
+  faceMesh.onResults(results => {
+    if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
+      const nose = results.multiFaceLandmarks[0][1];
+      headX = (1 - nose.x) * W;
+      headY = nose.y * H * 0.9 + 20;
+      if (!trackingActive) {
+        trackingActive = true;
+        dot.classList.add('active');
+        statusLabel.textContent = 'tracking';
+        statusMsg.textContent = 'face detected!';
+      }
+    } else {
+      trackingActive = false;
+      dot.classList.remove('active');
+      statusLabel.textContent = 'no face detected';
+    }
+  });
+
+  navigator.mediaDevices.getUserMedia({ video: true })
+    .then(stream => {
+      video.srcObject = stream;
+      statusMsg.textContent = 'camera on — finding your face...';
+      dot.style.background = '#EF9F27';
+      statusLabel.textContent = 'camera on';
+      const camera = new Camera(video, {
+        onFrame: async () => { await faceMesh.send({ image: video }); },
+        width: 700, height: 430
+      });
+      camera.start();
+    })
+    .catch(err => {
+      statusMsg.textContent = 'camera blocked — using mouse fallback';
+      enableMouseFallback();
+    });
+}
+
+function enableMouseFallback() {
+  trackingActive = true;
+  dot.classList.add('active');
+  statusLabel.textContent = 'mouse mode';
+  canvas.addEventListener('mousemove', e => {
+    const rect = canvas.getBoundingClientRect();
+    headX = (e.clientX - rect.left) * (W / rect.width);
+    headY = H * 0.75;
+  });
+}
+
+document.getElementById('startBtn').addEventListener('click', () => {
+  initMediaPipe();
+  startGame();
+});
+</script>
+</body>
+</html>
