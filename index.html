@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pokémon Dodge</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #0f0f1a;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      font-family: system-ui, sans-serif;
+      overflow: hidden;
+    }
+    #app { position: relative; width: 800px; }
+    #gameCanvas {
+      width: 100%;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.1);
+      display: block;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+    }
+    #videoEl { display: none; }
+    #statusDot {
+      position: absolute;
+      bottom: 12px;
+      left: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      pointer-events: none;
+    }
+    #dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #888;
+      transition: background 0.3s;
+    }
+    #dot.active { background: #1D9E75; }
+    #statusLabel { font-size: 12px; color: rgba(255,255,255,0.6); }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <canvas id="gameCanvas" width="800" height="500"></canvas>
+    <video id="videoEl" autoplay playsinline width="800" height="500"></video>
+    <div id="statusDot"><div id="dot"></div><span id="statusLabel">camera off</span></div>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3/camera_utils.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4/face_mesh.js"></script>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
