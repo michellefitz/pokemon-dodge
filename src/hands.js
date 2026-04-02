@@ -1,4 +1,5 @@
 import { W, H } from './constants.js';
+import { addFrameHandler } from './tracking.js';
 
 // Reactive hand state — game reads these directly
 export const handState = {
@@ -7,11 +8,9 @@ export const handState = {
 };
 
 let handsInstance = null;
+let frameCount = 0;
 
 export function initHands() {
-  const video = document.getElementById('videoEl');
-  if (!video || !video.srcObject) return; // no camera
-
   handsInstance = new Hands({
     locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4/${f}`,
   });
@@ -25,12 +24,13 @@ export function initHands() {
 
   handsInstance.onResults(onHandResults);
 
-  // Piggyback on the existing camera — send frames to hands too
-  // We poll the video element on a timer since the Camera util
-  // is already driving face mesh
+  // Register with the Camera's frame loop via tracking.js
+  // Process every 3rd frame (~10fps) to keep it lightweight
   let sending = false;
-  setInterval(async () => {
-    if (sending || !video.srcObject || video.readyState < 2) return;
+  addFrameHandler(async (video) => {
+    frameCount++;
+    if (frameCount % 3 !== 0) return; // skip 2 out of 3 frames
+    if (sending) return;
     sending = true;
     try {
       await handsInstance.send({ image: video });
@@ -38,7 +38,7 @@ export function initHands() {
       // ignore frame drops
     }
     sending = false;
-  }, 100); // ~10fps for hands (lighter than face mesh)
+  });
 }
 
 function onHandResults(results) {

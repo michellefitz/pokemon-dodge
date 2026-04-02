@@ -10,6 +10,14 @@ export const tracking = {
 
 let onStatusChange = null;
 
+// Additional frame handlers — other models (e.g. Hands) register here
+// to receive frames from the same Camera instance
+const extraFrameHandlers = [];
+
+export function addFrameHandler(fn) {
+  extraFrameHandlers.push(fn);
+}
+
 export function setStatusCallback(cb) {
   onStatusChange = cb;
 }
@@ -71,7 +79,12 @@ export function initTracking(canvas) {
       video.srcObject = stream;
       updateStatus(false, 'camera on');
       const camera = new Camera(video, {
-        onFrame: async () => { await faceMesh.send({ image: video }); },
+        onFrame: async () => {
+          await faceMesh.send({ image: video });
+          for (const handler of extraFrameHandlers) {
+            handler(video);
+          }
+        },
         width: W,
         height: H,
       });

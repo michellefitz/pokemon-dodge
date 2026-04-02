@@ -30,9 +30,8 @@ document.addEventListener('keydown', (e) => {
         selectStarter(chosen);
         resetGame();
         if (!trackingInitialized) {
+          initHands(); // register frame handler before camera starts
           initTracking(canvas);
-          // Init hand tracking after camera has time to start
-          setTimeout(() => initHands(), 1000);
           trackingInitialized = true;
         }
         state = 'playing';
