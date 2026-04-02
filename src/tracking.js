@@ -43,7 +43,13 @@ export function initTracking(canvas) {
   faceMesh.onResults(results => {
     if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
       const nose = results.multiFaceLandmarks[0][1];
-      tracking.x = (1 - nose.x) * W;
+      // Amplify head movement around center — nose.x typically stays
+      // within ~0.3-0.7 range on a laptop webcam, so we expand that
+      // to fill the full canvas width. sensitivity > 1 = more responsive.
+      const sensitivity = 2.5;
+      const centered = (1 - nose.x) - 0.5; // -0.5 to 0.5, mirrored
+      const amplified = centered * sensitivity + 0.5; // re-center to 0..1
+      tracking.x = Math.max(0, Math.min(W, amplified * W));
       tracking.y = nose.y * H * 0.9 + 20;
       if (!tracking.active) {
         tracking.active = true;
