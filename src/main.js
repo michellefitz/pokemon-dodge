@@ -1,5 +1,6 @@
 import { W, H } from './constants.js';
 import { initTracking } from './tracking.js';
+import { initHands } from './hands.js';
 import { selectStarter, resetPlayer, getStarterNames, player } from './player.js';
 import { resetGame, updateGame, drawGame, getScore } from './game.js';
 import { drawTitleScreen, drawSelectScreen, getSelectIndex, moveSelect, drawGameOverScreen, startGameOver } from './screens.js';
@@ -30,6 +31,8 @@ document.addEventListener('keydown', (e) => {
         resetGame();
         if (!trackingInitialized) {
           initTracking(canvas);
+          // Init hand tracking after camera has time to start
+          setTimeout(() => initHands(), 1000);
           trackingInitialized = true;
         }
         state = 'playing';

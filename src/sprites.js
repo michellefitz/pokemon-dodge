@@ -598,3 +598,39 @@ export const EMBER_SPRITE = {
   ],
   palette: { 1:'#222', 2:'#e03010', 3:'#f87020', 4:'#fff060' },
 };
+
+// --- PROJECTILE SPRITES (8x8) ---
+
+const RAZOR_LEAF_PALETTE = { 1: '#222', 2: '#2E7D32', 3: '#4CAF50', 4: '#81C784' };
+
+// prettier-ignore
+export const RAZOR_LEAF_SPRITE = {
+  data: [
+    [0,0,0,0,0,1,1,0],
+    [0,0,0,0,1,3,2,1],
+    [0,0,0,1,3,2,2,1],
+    [0,0,1,3,2,2,1,0],
+    [0,1,3,2,2,1,0,0],
+    [1,4,3,2,1,0,0,0],
+    [1,4,4,1,0,0,0,0],
+    [0,1,1,0,0,0,0,0],
+  ],
+  palette: RAZOR_LEAF_PALETTE,
+};
+
+const WATER_SHOT_PALETTE = { 1: '#222', 2: '#1976D2', 3: '#42A5F5', 4: '#90CAF9' };
+
+// prettier-ignore
+export const WATER_SHOT_SPRITE = {
+  data: [
+    [0,0,0,1,1,0,0,0],
+    [0,0,1,3,3,1,0,0],
+    [0,1,3,4,4,3,1,0],
+    [1,2,3,4,4,3,2,1],
+    [1,2,3,4,4,3,2,1],
+    [0,1,2,3,3,2,1,0],
+    [0,0,1,2,2,1,0,0],
+    [0,0,0,1,1,0,0,0],
+  ],
+  palette: WATER_SHOT_PALETTE,
+};

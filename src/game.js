@@ -5,6 +5,7 @@ import { clearBerries, spawnBerry, updateBerries, checkBerryCollisions, drawBerr
 import { resetEvents, trySpawnEvent, updateEvent, isControlsReversed, drawEvent, getActiveEvent, getSnorlaxBlockRect } from './events.js';
 import { drawStarfield, updateAndDrawParticles, drawHUD, applyScreenEffects, triggerShake, triggerFlash, spawnParticles } from './renderer.js';
 import { startEvolutionCutscene, updateEvolutionCutscene, drawEvolutionCutscene } from './screens.js';
+import { updateProjectiles, checkProjectileCollisions, drawProjectiles, drawEnergyBars, resetProjectiles } from './projectiles.js';
 
 // ============================================================
 // MODULE STATE
@@ -33,6 +34,7 @@ export function resetGame() {
   clearObstacles();
   clearBerries();
   resetEvents();
+  resetProjectiles();
   setOnDodgedCallback(onObstacleDodged);
 }
 
@@ -140,6 +142,10 @@ export function updateGame(ts, dt) {
   updateObstacles(dt);
   updateBerries(dt);
 
+  // ── Projectiles ─────────────────────────────────────────
+  updateProjectiles(ts, dt);
+  checkProjectileCollisions();
+
   // ── Random events ────────────────────────────────────────
   if (wave.eventsEnabled) {
     trySpawnEvent(gameTime);
@@ -197,6 +203,8 @@ export function drawGame(ctx, ts, dt) {
   drawObstacles(ctx, ts);
   drawBerries(ctx, ts);
   drawPlayer(ctx, ts);
+  drawProjectiles(ctx, ts);
+  drawEnergyBars(ctx);
   drawEvent(ctx, ts);
 
   ctx.restore();
