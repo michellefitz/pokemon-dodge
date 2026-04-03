@@ -41,6 +41,27 @@ export function initHands() {
   });
 }
 
+// Check if a finger is extended by comparing tip to PIP joint (knuckle).
+// Fingertip landmarks: index=8, middle=12, ring=16, pinky=20
+// PIP joint landmarks: index=6, middle=10, ring=14, pinky=18
+// A finger is extended when its tip is further from the wrist than its PIP.
+function countExtendedFingers(landmarks) {
+  const tipIds  = [8, 12, 16, 20];
+  const pipIds  = [6, 10, 14, 18];
+  const wrist = landmarks[0];
+  let count = 0;
+
+  for (let f = 0; f < 4; f++) {
+    const tip = landmarks[tipIds[f]];
+    const pip = landmarks[pipIds[f]];
+    // Compare distance from wrist — extended finger's tip is further out
+    const tipDist = Math.hypot(tip.x - wrist.x, tip.y - wrist.y);
+    const pipDist = Math.hypot(pip.x - wrist.x, pip.y - wrist.y);
+    if (tipDist > pipDist * 1.1) count++; // 10% margin to avoid flicker
+  }
+  return count;
+}
+
 function onHandResults(results) {
   // Reset both
   handState.left.active = false;
@@ -57,15 +78,13 @@ function onHandResults(results) {
     const isLeft = handedness.label === 'Right';
     const hand = isLeft ? handState.left : handState.right;
 
-    const wrist = landmarks[0];
     const middleMCP = landmarks[9]; // middle finger MCP for hand center
 
-    // Use middle finger MCP for aiming position
-    // Mirror x to match our face tracking (1 - x)
+    // Always update position so the tracking indicator shows
     hand.x = (1 - middleMCP.x) * W;
     hand.y = middleMCP.y * H;
 
-    // Hand is active whenever detected — no height threshold
-    hand.active = true;
+    // Open hand (3+ fingers extended) = fire, fist = don't fire
+    hand.active = countExtendedFingers(landmarks) >= 3;
   }
 }
