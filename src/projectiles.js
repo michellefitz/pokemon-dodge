@@ -10,10 +10,10 @@ const projectiles = [];
 // Energy per hand (0-100)
 const energy = { left: 100, right: 100 };
 const ENERGY_MAX = 100;
-const ENERGY_COST = 10;
-const ENERGY_RECHARGE = 15; // per second
-const ENERGY_MIN_TO_FIRE = 20;
-const FIRE_INTERVAL = 1000; // ms between shots per hand
+const ENERGY_COST = 5;
+const ENERGY_RECHARGE = 12; // per second
+const ENERGY_MIN_TO_FIRE = 10;
+const FIRE_INTERVAL = 250; // ms between shots per hand — continuous stream
 const PROJECTILE_SPEED = 6;
 const PROJECTILE_RADIUS = 6;
 
