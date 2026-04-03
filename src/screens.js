@@ -2,6 +2,7 @@ import { W, H, COLORS, SPRITE_SCALE } from './constants.js';
 import { drawSprite, STARTER_SPRITES } from './sprites.js';
 import { getStarterNames, getStarterDef, player } from './player.js';
 import { drawStarfield } from './renderer.js';
+import { getCachedScores } from './leaderboard.js';
 
 // ============================================================
 // HELPERS
@@ -309,10 +310,383 @@ export function drawGameOverScreen(ctx, ts, dt, finalScore) {
   ctx.font = 'bold 28px monospace';
   drawTextWithOutline(ctx, `SCORE: ${displayedScore}`, W / 2, H / 2 + 10, COLORS.scoreYellow, 3);
 
-  // "PRESS ENTER TO PLAY AGAIN" blinking after tally
+  // After tally, show leaderboard prompt
   if (tallyDone && Math.floor(gameOverTimer / 500) % 2 === 0) {
-    ctx.font = 'bold 18px monospace';
-    drawTextWithOutline(ctx, 'PRESS ENTER TO PLAY AGAIN', W / 2, H / 2 + 65, '#ffffff', 2);
+    ctx.font = 'bold 16px monospace';
+    drawTextWithOutline(ctx, 'PRESS ENTER FOR LEADERBOARD', W / 2, H / 2 + 65, '#ffffff', 2);
+  }
+
+  ctx.restore();
+}
+
+// ============================================================
+// 5. INSTRUCTIONS SCREEN
+// ============================================================
+
+export function drawInstructionsScreen(ctx, ts, dt) {
+  ctx.fillStyle = COLORS.bg;
+  ctx.fillRect(0, 0, W, H);
+  drawStarfield(ctx, dt);
+
+  ctx.save();
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  // Title
+  ctx.font = 'bold 28px monospace';
+  drawTextWithOutline(ctx, 'HOW TO PLAY', W / 2, 50, COLORS.scoreYellow, 3);
+
+  // --- Head movement illustration (left side) ---
+  const headX = W * 0.28;
+  const headY = 175;
+
+  // Draw a simple head circle with arrows
+  ctx.globalAlpha = 0.8;
+  ctx.fillStyle = '#888';
+  ctx.beginPath();
+  ctx.arc(headX, headY, 22, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Eyes
+  ctx.fillStyle = '#fff';
+  ctx.beginPath();
+  ctx.arc(headX - 7, headY - 4, 4, 0, Math.PI * 2);
+  ctx.arc(headX + 7, headY - 4, 4, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#333';
+  ctx.beginPath();
+  ctx.arc(headX - 7, headY - 4, 2, 0, Math.PI * 2);
+  ctx.arc(headX + 7, headY - 4, 2, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Arrows around head (left, right, up, down)
+  ctx.strokeStyle = COLORS.scoreYellow;
+  ctx.lineWidth = 2.5;
+  ctx.globalAlpha = 0.9;
+  const arrowLen = 20;
+  const arrowGap = 32;
+
+  // Left arrow
+  drawArrow(ctx, headX - arrowGap, headY, headX - arrowGap - arrowLen, headY);
+  // Right arrow
+  drawArrow(ctx, headX + arrowGap, headY, headX + arrowGap + arrowLen, headY);
+  // Up arrow
+  drawArrow(ctx, headX, headY - arrowGap, headX, headY - arrowGap - arrowLen);
+  // Down arrow
+  drawArrow(ctx, headX, headY + arrowGap, headX, headY + arrowGap + arrowLen);
+
+  ctx.globalAlpha = 1;
+
+  // Head movement text
+  ctx.font = '14px monospace';
+  ctx.fillStyle = '#fff';
+  ctx.fillText('Move your head left & right', headX, headY + 70);
+  ctx.fillText('Tilt up & down to dodge', headX, headY + 90);
+
+  // --- Hand shooting illustration (right side) ---
+  const handX = W * 0.72;
+  const handY = 175;
+
+  // Closed fist (left)
+  ctx.globalAlpha = 0.5;
+  drawFist(ctx, handX - 50, handY);
+
+  // Arrow between
+  ctx.globalAlpha = 0.8;
+  ctx.strokeStyle = COLORS.scoreYellow;
+  ctx.lineWidth = 2;
+  drawArrow(ctx, handX - 22, handY, handX + 22, handY);
+
+  // Open hand (right)
+  ctx.globalAlpha = 0.9;
+  drawOpenHand(ctx, handX + 50, handY);
+
+  // Projectile coming from open hand
+  ctx.fillStyle = '#EF9F27';
+  ctx.globalAlpha = 0.8;
+  for (let i = 0; i < 3; i++) {
+    ctx.beginPath();
+    ctx.arc(handX + 90 + i * 18, handY, 4 - i, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.globalAlpha = 1;
+
+  // Hand text
+  ctx.font = '14px monospace';
+  ctx.fillStyle = '#fff';
+  ctx.fillText('Open your hand to shoot', handX, handY + 70);
+  ctx.fillText('Close fist to stop firing', handX, handY + 90);
+
+  // Goal section
+  ctx.font = 'bold 18px monospace';
+  drawTextWithOutline(ctx, 'GOAL: Score the highest points!', W / 2, 340, '#fff', 2);
+
+  ctx.font = '13px monospace';
+  ctx.globalAlpha = 0.6;
+  ctx.fillStyle = '#fff';
+  ctx.fillText('Dodge obstacles  •  Collect berries  •  Shoot enemies', W / 2, 370);
+  ctx.fillText('Your Pokemon evolves as you score higher!', W / 2, 390);
+  ctx.globalAlpha = 1;
+
+  // Continue prompt
+  if (Math.floor(ts / 500) % 2 === 0) {
+    ctx.font = 'bold 16px monospace';
+    drawTextWithOutline(ctx, 'PRESS ENTER TO CONTINUE', W / 2, H - 40, '#fff', 2);
+  }
+
+  ctx.restore();
+}
+
+function drawArrow(ctx, fromX, fromY, toX, toY) {
+  const angle = Math.atan2(toY - fromY, toX - fromX);
+  const headLen = 8;
+
+  ctx.beginPath();
+  ctx.moveTo(fromX, fromY);
+  ctx.lineTo(toX, toY);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(toX, toY);
+  ctx.lineTo(toX - headLen * Math.cos(angle - 0.4), toY - headLen * Math.sin(angle - 0.4));
+  ctx.moveTo(toX, toY);
+  ctx.lineTo(toX - headLen * Math.cos(angle + 0.4), toY - headLen * Math.sin(angle + 0.4));
+  ctx.stroke();
+}
+
+function drawFist(ctx, x, y) {
+  // Simple fist: rounded rectangle
+  ctx.fillStyle = '#c4956a';
+  ctx.beginPath();
+  ctx.arc(x, y, 16, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = '#222';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Knuckle lines
+  ctx.strokeStyle = '#a07850';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(x - 8, y - 4);
+  ctx.lineTo(x + 8, y - 4);
+  ctx.moveTo(x - 6, y + 2);
+  ctx.lineTo(x + 6, y + 2);
+  ctx.stroke();
+}
+
+function drawOpenHand(ctx, x, y) {
+  // Palm
+  ctx.fillStyle = '#c4956a';
+  ctx.beginPath();
+  ctx.arc(x, y + 4, 14, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Fingers (5 lines going up)
+  ctx.strokeStyle = '#c4956a';
+  ctx.lineWidth = 5;
+  ctx.lineCap = 'round';
+  const fingers = [-12, -6, 0, 6, 12];
+  const lengths = [14, 20, 22, 20, 14];
+  for (let i = 0; i < 5; i++) {
+    ctx.beginPath();
+    ctx.moveTo(x + fingers[i], y - 2);
+    ctx.lineTo(x + fingers[i], y - 2 - lengths[i]);
+    ctx.stroke();
+  }
+
+  // Outline
+  ctx.strokeStyle = '#222';
+  ctx.lineWidth = 1.5;
+  ctx.lineCap = 'butt';
+  ctx.beginPath();
+  ctx.arc(x, y + 4, 14, 0, Math.PI * 2);
+  ctx.stroke();
+}
+
+// ============================================================
+// 6. ENTER NAME SCREEN
+// ============================================================
+
+let playerName = '';
+
+export function getPlayerName() {
+  return playerName;
+}
+
+export function handleNameKeydown(e) {
+  if (e.key === 'Backspace') {
+    playerName = playerName.slice(0, -1);
+    return 'typing';
+  }
+  if (e.key === 'Enter' && playerName.length > 0) {
+    return 'done';
+  }
+  // Accept letters, numbers, spaces — max 12 chars
+  if (playerName.length < 12 && /^[a-zA-Z0-9 ]$/.test(e.key)) {
+    playerName += e.key;
+    return 'typing';
+  }
+  return 'typing';
+}
+
+export function resetName() {
+  playerName = '';
+}
+
+export function drawEnterNameScreen(ctx, ts, dt) {
+  ctx.fillStyle = COLORS.bg;
+  ctx.fillRect(0, 0, W, H);
+  drawStarfield(ctx, dt);
+
+  ctx.save();
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  // Title
+  ctx.font = 'bold 28px monospace';
+  drawTextWithOutline(ctx, 'ENTER YOUR NAME', W / 2, H * 0.3, COLORS.scoreYellow, 3);
+
+  // Name input box
+  const boxW = 280;
+  const boxH = 50;
+  const boxX = W / 2 - boxW / 2;
+  const boxY = H * 0.45 - boxH / 2;
+
+  ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(boxX, boxY, boxW, boxH);
+
+  // Name text
+  ctx.font = 'bold 24px monospace';
+  const displayName = playerName + (Math.floor(ts / 400) % 2 === 0 ? '_' : '');
+  ctx.fillStyle = '#fff';
+  ctx.fillText(displayName || '_', W / 2, H * 0.45);
+
+  // Instruction
+  ctx.font = '14px monospace';
+  ctx.globalAlpha = 0.6;
+  ctx.fillStyle = '#fff';
+  ctx.fillText('Type your name and press ENTER', W / 2, H * 0.6);
+  ctx.globalAlpha = 1;
+
+  ctx.restore();
+}
+
+// ============================================================
+// 7. LEADERBOARD SCREEN
+// ============================================================
+
+let leaderboardScrollY = 0;
+
+export function resetLeaderboardScroll() {
+  leaderboardScrollY = 0;
+}
+
+export function drawLeaderboardScreen(ctx, ts, dt, playerScore, playerNameStr) {
+  ctx.fillStyle = COLORS.bg;
+  ctx.fillRect(0, 0, W, H);
+  drawStarfield(ctx, dt);
+
+  ctx.save();
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  // Title
+  ctx.font = 'bold 28px monospace';
+  drawTextWithOutline(ctx, 'LEADERBOARD', W / 2, 45, COLORS.scoreYellow, 3);
+
+  const scores = getCachedScores();
+
+  if (scores.length === 0) {
+    ctx.font = '16px monospace';
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.fillText('No scores yet — you could be first!', W / 2, H / 2);
+  } else {
+    // Table header
+    const tableTop = 85;
+    const rowH = 28;
+    const rankX = W / 2 - 200;
+    const nameX = W / 2 - 80;
+    const scoreX = W / 2 + 180;
+
+    ctx.font = 'bold 13px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.fillText('RANK', rankX, tableTop);
+    ctx.fillText('NAME', nameX, tableTop);
+    ctx.textAlign = 'right';
+    ctx.fillText('SCORE', scoreX, tableTop);
+
+    // Divider line
+    ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(rankX, tableTop + 12);
+    ctx.lineTo(scoreX, tableTop + 12);
+    ctx.stroke();
+
+    // Scores — show top 12 that fit on screen
+    const maxVisible = 12;
+    const visibleScores = scores.slice(0, maxVisible);
+
+    for (let i = 0; i < visibleScores.length; i++) {
+      const entry = visibleScores[i];
+      const y = tableTop + 30 + i * rowH;
+      const rank = i + 1;
+
+      // Parse name (remove the ::timestamp suffix)
+      const name = entry.name.split('::')[0];
+
+      // Highlight if this is the player's score
+      const isPlayer = name === playerNameStr && entry.score === playerScore;
+
+      if (isPlayer) {
+        // Highlight row
+        ctx.fillStyle = 'rgba(239, 159, 39, 0.15)';
+        ctx.fillRect(rankX - 10, y - 10, scoreX - rankX + 20, rowH);
+      }
+
+      // Rank
+      ctx.textAlign = 'left';
+      ctx.font = 'bold 15px monospace';
+      ctx.fillStyle = rank <= 3 ? COLORS.scoreYellow : '#fff';
+      ctx.fillText(`${rank}.`, rankX, y);
+
+      // Rank emoji for top 3
+      if (rank === 1) ctx.fillText(' 👑', rankX + 20, y);
+
+      // Name
+      ctx.textAlign = 'left';
+      ctx.font = isPlayer ? 'bold 15px monospace' : '15px monospace';
+      ctx.fillStyle = isPlayer ? COLORS.scoreYellow : '#fff';
+      ctx.fillText(name, nameX, y);
+
+      // Score
+      ctx.textAlign = 'right';
+      ctx.font = 'bold 15px monospace';
+      ctx.fillText(`${entry.score}`, scoreX, y);
+    }
+
+    if (scores.length > maxVisible) {
+      ctx.textAlign = 'center';
+      ctx.font = '12px monospace';
+      ctx.fillStyle = 'rgba(255,255,255,0.4)';
+      ctx.fillText(`+ ${scores.length - maxVisible} more`, W / 2, tableTop + 30 + maxVisible * rowH + 10);
+    }
+  }
+
+  // Your score summary
+  ctx.textAlign = 'center';
+  ctx.font = '16px monospace';
+  ctx.fillStyle = 'rgba(255,255,255,0.6)';
+  ctx.fillText(`Your score: ${playerScore}`, W / 2, H - 70);
+
+  // Play again prompt
+  if (Math.floor(ts / 500) % 2 === 0) {
+    ctx.font = 'bold 16px monospace';
+    drawTextWithOutline(ctx, 'PRESS ENTER TO PLAY AGAIN', W / 2, H - 35, '#fff', 2);
   }
 
   ctx.restore();
