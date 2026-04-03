@@ -50,30 +50,21 @@ export function initTracking(canvas) {
 
   faceMesh.onResults(results => {
     if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
-      const lm = results.multiFaceLandmarks[0];
-      const nose = lm[1];        // nose tip
-      const forehead = lm[10];   // top of forehead
-      const chin = lm[152];      // bottom of chin
+      const nose = results.multiFaceLandmarks[0][1];
 
-      // ── X: side-to-side head movement (amplified) ──
-      const sensitivity = 2.5;
-      const centered = (1 - nose.x) - 0.5;
-      const amplified = centered * sensitivity + 0.5;
-      tracking.x = Math.max(0, Math.min(W, amplified * W));
+      // ── X: side-to-side head movement (amplified around center) ──
+      const xSensitivity = 2.5;
+      const xCentered = (1 - nose.x) - 0.5;
+      const xAmplified = xCentered * xSensitivity + 0.5;
+      tracking.x = Math.max(0, Math.min(W, xAmplified * W));
 
-      // ── Y: head tilt (pitch) instead of actual Y position ──
-      // Measure where nose sits between forehead and chin.
-      // Neutral ≈ 0.35 (nose is closer to forehead than chin).
-      // Tilt forward → ratio increases → move down.
-      // Tilt back → ratio decreases → move up.
-      const faceHeight = chin.y - forehead.y;
-      const noseRatio = faceHeight > 0.01 ? (nose.y - forehead.y) / faceHeight : 0.35;
-      const neutralRatio = 0.35;
-      const tiltSensitivity = 5.0;
-      const tiltOffset = (noseRatio - neutralRatio) * tiltSensitivity;
-      // Map tilt to full vertical range
-      const baseY = H * 0.5;
-      tracking.y = Math.max(30, Math.min(H - 30, baseY + tiltOffset * H));
+      // ── Y: up-down head movement (amplified around center) ──
+      // Same approach as X — nose.y stays in a narrow range on
+      // a laptop, so we amplify small movements to cover the canvas.
+      const ySensitivity = 2.5;
+      const yCentered = nose.y - 0.5;
+      const yAmplified = yCentered * ySensitivity + 0.5;
+      tracking.y = Math.max(30, Math.min(H - 30, yAmplified * H));
       if (!tracking.active) {
         tracking.active = true;
         tracking.mode = 'camera';
