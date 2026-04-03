@@ -1,10 +1,40 @@
-import { kv } from '@vercel/kv';
+import { Redis } from '@upstash/redis';
+import { createHmac } from 'crypto';
+
+const redis = new Redis({
+  url: process.env.KV_REST_API_URL,
+  token: process.env.KV_REST_API_TOKEN,
+});
 
 const LEADERBOARD_KEY = 'pokemon-dodge:leaderboard';
 const MAX_ENTRIES = 50;
+const MAX_SCORE = 500; // no legit game exceeds this
+const RATE_LIMIT_SECONDS = 30;
+const SCORE_SECRET = process.env.SCORE_SECRET || 'pokemon-dodge-default-secret';
+
+// Verify the HMAC token the client sends with each score submission
+function verifyToken(name, score, token) {
+  const expected = createHmac('sha256', SCORE_SECRET)
+    .update(`${name}:${score}`)
+    .digest('hex')
+    .slice(0, 16); // short hash is fine for this use case
+  return token === expected;
+}
+
+function sanitizeName(name) {
+  if (typeof name !== 'string') return '';
+  // Strip non-alphanumeric (except spaces), trim, limit to 12 chars
+  return name.replace(/[^a-zA-Z0-9 ]/g, '').trim().slice(0, 12);
+}
+
+function getClientIP(req) {
+  return req.headers['x-forwarded-for']?.split(',')[0]?.trim()
+    || req.headers['x-real-ip']
+    || req.socket?.remoteAddress
+    || 'unknown';
+}
 
 export default async function handler(req, res) {
-  // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -15,10 +45,8 @@ export default async function handler(req, res) {
 
   try {
     if (req.method === 'GET') {
-      // Get top scores (highest first)
-      const scores = await kv.zrange(LEADERBOARD_KEY, 0, MAX_ENTRIES - 1, { rev: true, withScores: true });
+      const scores = await redis.zrange(LEADERBOARD_KEY, 0, MAX_ENTRIES - 1, { rev: true, withScores: true });
 
-      // scores comes as [member, score, member, score, ...]
       const leaderboard = [];
       for (let i = 0; i < scores.length; i += 2) {
         leaderboard.push({ name: scores[i], score: scores[i + 1] });
@@ -28,20 +56,43 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'POST') {
-      const { name, score } = req.body;
+      const { name, score, token } = req.body;
 
-      if (!name || typeof score !== 'number') {
-        return res.status(400).json({ error: 'name and score required' });
+      // --- Validation ---
+      const cleanName = sanitizeName(name);
+      if (!cleanName) {
+        return res.status(400).json({ error: 'Valid name required' });
       }
 
-      // Use name + timestamp as member to allow duplicate names with different scores
-      const member = `${name}::${Date.now()}`;
-      await kv.zadd(LEADERBOARD_KEY, { score, member });
+      if (typeof score !== 'number' || !Number.isInteger(score) || score < 0) {
+        return res.status(400).json({ error: 'Score must be a non-negative integer' });
+      }
 
-      // Trim to keep only top entries
-      const count = await kv.zcard(LEADERBOARD_KEY);
+      if (score > MAX_SCORE) {
+        return res.status(400).json({ error: 'Score exceeds maximum' });
+      }
+
+      // --- Token verification ---
+      if (!verifyToken(cleanName, score, token)) {
+        return res.status(403).json({ error: 'Invalid token' });
+      }
+
+      // --- Rate limiting (per IP) ---
+      const ip = getClientIP(req);
+      const rateLimitKey = `pokemon-dodge:ratelimit:${ip}`;
+      const existing = await redis.get(rateLimitKey);
+      if (existing) {
+        return res.status(429).json({ error: 'Too many submissions, try again later' });
+      }
+      await redis.set(rateLimitKey, '1', { ex: RATE_LIMIT_SECONDS });
+
+      // --- Store score ---
+      const member = `${cleanName}::${Date.now()}`;
+      await redis.zadd(LEADERBOARD_KEY, { score, member });
+
+      const count = await redis.zcard(LEADERBOARD_KEY);
       if (count > MAX_ENTRIES) {
-        await kv.zremrangebyrank(LEADERBOARD_KEY, 0, count - MAX_ENTRIES - 1);
+        await redis.zremrangebyrank(LEADERBOARD_KEY, 0, count - MAX_ENTRIES - 1);
       }
 
       return res.status(200).json({ ok: true });
