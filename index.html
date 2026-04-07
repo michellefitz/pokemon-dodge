@@ -16,7 +16,7 @@
       font-family: system-ui, sans-serif;
       overflow: hidden;
     }
-    #app { position: relative; width: 800px; max-width: 100vw; }
+    #app { position: relative; max-width: 100vw; width: fit-content; }
     #gameCanvas {
       width: 100%;
       border-radius: 12px;
@@ -49,7 +49,7 @@
 <body>
   <div id="app">
     <canvas id="gameCanvas" width="800" height="500"></canvas>
-    <video id="videoEl" autoplay playsinline width="800" height="500"></video>
+    <video id="videoEl" autoplay playsinline width="640" height="480"></video>
     <div id="statusDot"><div id="dot"></div><span id="statusLabel">camera off</span></div>
   </div>
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3/camera_utils.js"></script>

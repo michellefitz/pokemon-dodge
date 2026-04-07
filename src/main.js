@@ -17,6 +17,8 @@ import { touchShoot } from './projectiles.js';
 inject();
 
 const canvas = document.getElementById('gameCanvas');
+canvas.width = W;
+canvas.height = H;
 const ctx = canvas.getContext('2d');
 
 // States: title → instructions → enterName → select → playing → gameover → leaderboard
