@@ -16,7 +16,7 @@
       font-family: system-ui, sans-serif;
       overflow: hidden;
     }
-    #app { position: relative; width: 800px; }
+    #app { position: relative; width: 800px; max-width: 100vw; }
     #gameCanvas {
       width: 100%;
       border-radius: 12px;
@@ -24,6 +24,7 @@
       display: block;
       image-rendering: pixelated;
       image-rendering: crisp-edges;
+      touch-action: none; /* prevent scroll/zoom on canvas */
     }
     #videoEl { display: none; }
     #statusDot {

@@ -177,7 +177,12 @@ export function drawSelectScreen(ctx, ts, dt) {
   ctx.globalAlpha = 0.65;
   ctx.fillStyle = '#ffffff';
   ctx.textBaseline = 'bottom';
-  ctx.fillText('\u2190 \u2192 to choose  \u2022  ENTER to confirm', W / 2, H - 16);
+  const isMobile = 'ontouchstart' in window;
+  if (isMobile) {
+    ctx.fillText('Tap left / right to choose  \u2022  Tap center to confirm', W / 2, H - 16);
+  } else {
+    ctx.fillText('\u2190 \u2192 to choose  \u2022  ENTER to confirm', W / 2, H - 16);
+  }
 
   ctx.restore();
 }
@@ -415,8 +420,14 @@ export function drawInstructionsScreen(ctx, ts, dt) {
   // Hand text
   ctx.font = '14px monospace';
   ctx.fillStyle = '#fff';
-  ctx.fillText('Open your hand to shoot', handX, handY + 70);
-  ctx.fillText('Close fist to stop firing', handX, handY + 90);
+  const isMobileInstr = 'ontouchstart' in window;
+  if (isMobileInstr) {
+    ctx.fillText('Tap the screen to shoot', handX, handY + 70);
+    ctx.fillText('toward where you tap!', handX, handY + 90);
+  } else {
+    ctx.fillText('Open your hand to shoot', handX, handY + 70);
+    ctx.fillText('Close fist to stop firing', handX, handY + 90);
+  }
 
   // Goal section
   ctx.font = 'bold 18px monospace';

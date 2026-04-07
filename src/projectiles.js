@@ -39,6 +39,42 @@ export function resetProjectiles() {
   lastFireTime.right = 0;
   canFire.left = true;
   canFire.right = true;
+  lastTouchFire = 0;
+}
+
+let lastTouchFire = 0;
+
+// Touch-to-shoot for mobile — fires toward the tapped position
+export function touchShoot(tapX, tapY) {
+  const now = performance.now();
+  if (now - lastTouchFire < FIRE_INTERVAL) return;
+
+  // Use left energy for left-side taps, right for right-side
+  const side = tapX < player.smoothX ? 'left' : 'right';
+  if (energy[side] < ENERGY_COST || !canFire[side]) return;
+
+  let dx = tapX - player.smoothX;
+  let dy = tapY - player.smoothY;
+  const dist = Math.sqrt(dx * dx + dy * dy);
+  if (dist < 10) return;
+
+  dx /= dist;
+  dy /= dist;
+
+  projectiles.push({
+    x: player.smoothX,
+    y: player.smoothY,
+    vx: dx * PROJECTILE_SPEED,
+    vy: dy * PROJECTILE_SPEED,
+  });
+
+  energy[side] -= ENERGY_COST;
+  lastTouchFire = now;
+
+  if (energy[side] <= 0) {
+    energy[side] = 0;
+    canFire[side] = false;
+  }
 }
 
 function tryFire(hand, side, ts) {
