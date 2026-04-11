@@ -11,7 +11,6 @@ export const tracking = {
 let onStatusChange = null;
 
 // Additional frame handlers — other models (e.g. Hands) register here
-// to receive frames from the same Camera instance
 const extraFrameHandlers = [];
 
 export function addFrameHandler(fn) {
@@ -34,71 +33,108 @@ function updateStatus(dotActive, label) {
   if (onStatusChange) onStatusChange(dotActive, label);
 }
 
+let cameraInstance = null;
+let activeStream = null;
+
+// Returns a promise that resolves when tracking is active (face detected or mouse fallback)
 export function initTracking(canvas) {
-  const video = document.getElementById('videoEl');
+  return new Promise((resolve) => {
+    const video = document.getElementById('videoEl');
 
-  const faceMesh = new FaceMesh({
-    locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4/${f}`,
-  });
-
-  faceMesh.setOptions({
-    maxNumFaces: 1,
-    refineLandmarks: false,
-    minDetectionConfidence: 0.5,
-    minTrackingConfidence: 0.5,
-  });
-
-  faceMesh.onResults(results => {
-    if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
-      const nose = results.multiFaceLandmarks[0][1];
-
-      // ── X: side-to-side head movement (amplified around center) ──
-      const xSensitivity = 2.5;
-      const xCentered = (1 - nose.x) - 0.5;
-      const xAmplified = xCentered * xSensitivity + 0.5;
-      tracking.x = Math.max(0, Math.min(W, xAmplified * W));
-
-      // ── Y: up-down head movement (amplified around center) ──
-      // Same approach as X — nose.y stays in a narrow range on
-      // a laptop, so we amplify small movements to cover the canvas.
-      const ySensitivity = 2.5;
-      const yCentered = nose.y - 0.5;
-      const yAmplified = yCentered * ySensitivity + 0.5;
-      tracking.y = Math.max(30, Math.min(H - 30, yAmplified * H));
-      if (!tracking.active) {
-        tracking.active = true;
-        tracking.mode = 'camera';
-        updateStatus(true, 'tracking');
-      }
-    } else {
-      if (tracking.mode === 'camera') {
-        tracking.active = false;
-        updateStatus(false, 'no face detected');
-      }
-    }
-  });
-
-  updateStatus(false, 'loading...');
-
-  navigator.mediaDevices.getUserMedia({ video: true })
-    .then(stream => {
-      video.srcObject = stream;
-      updateStatus(false, 'camera on');
-      const camera = new Camera(video, {
-        onFrame: async () => {
-          await faceMesh.send({ image: video });
-          for (const handler of extraFrameHandlers) {
-            handler(video);
-          }
-        },
-        width: W,
-        height: H,
-      });
-      camera.start();
-    })
-    .catch(() => {
-      enableMouseFallback(canvas);
+    const faceMesh = new FaceMesh({
+      locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4/${f}`,
     });
+
+    faceMesh.setOptions({
+      maxNumFaces: 1,
+      refineLandmarks: false,
+      minDetectionConfidence: 0.5,
+      minTrackingConfidence: 0.5,
+    });
+
+    let resolved = false;
+
+    faceMesh.onResults(results => {
+      if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
+        const nose = results.multiFaceLandmarks[0][1];
+
+        const xSensitivity = 2.5;
+        const xCentered = (1 - nose.x) - 0.5;
+        const xAmplified = xCentered * xSensitivity + 0.5;
+        tracking.x = Math.max(0, Math.min(W, xAmplified * W));
+
+        const ySensitivity = 2.5;
+        const yCentered = nose.y - 0.5;
+        const yAmplified = yCentered * ySensitivity + 0.5;
+        tracking.y = Math.max(30, Math.min(H - 30, yAmplified * H));
+
+        if (!tracking.active) {
+          tracking.active = true;
+          tracking.mode = 'camera';
+          updateStatus(true, 'tracking');
+        }
+
+        // Resolve on first face detection
+        if (!resolved) {
+          resolved = true;
+          resolve('camera');
+        }
+      } else {
+        if (tracking.mode === 'camera') {
+          tracking.active = false;
+          updateStatus(false, 'no face detected');
+        }
+      }
+    });
+
+    updateStatus(false, 'loading camera...');
+
+    navigator.mediaDevices.getUserMedia({ video: true })
+      .then(stream => {
+        activeStream = stream;
+        video.srcObject = stream;
+        updateStatus(false, 'finding your face...');
+        cameraInstance = new Camera(video, {
+          onFrame: async () => {
+            await faceMesh.send({ image: video });
+            for (const handler of extraFrameHandlers) {
+              handler(video);
+            }
+          },
+          width: W,
+          height: H,
+        });
+        cameraInstance.start();
+      })
+      .catch(() => {
+        enableMouseFallback(canvas);
+        if (!resolved) {
+          resolved = true;
+          resolve('mouse');
+        }
+      });
+  });
+}
+
+// Stop the camera and release the stream
+export function stopTracking() {
+  if (cameraInstance) {
+    try { cameraInstance.stop(); } catch (e) { /* ignore */ }
+    cameraInstance = null;
+  }
+  if (activeStream) {
+    for (const track of activeStream.getTracks()) {
+      track.stop();
+    }
+    activeStream = null;
+  }
+  const video = document.getElementById('videoEl');
+  if (video) {
+    video.srcObject = null;
+  }
+  tracking.active = false;
+  tracking.mode = 'none';
+  updateStatus(false, 'camera off');
 }
 
 function enableMouseFallback(canvas) {
