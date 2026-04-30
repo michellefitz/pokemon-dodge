@@ -4,6 +4,7 @@ import { player } from './player.js';
 import { getObstacles } from './obstacles.js';
 import { spawnParticles } from './renderer.js';
 import { handState } from './hands.js';
+import { playFireSound } from './audio.js';
 
 const projectiles = [];
 
@@ -77,6 +78,7 @@ export function touchShoot(tapX, tapY) {
     vy: dy * PROJECTILE_SPEED,
   });
   _hasFired = true;
+  playFireSound();
 
   energy[side] -= ENERGY_COST;
   lastTouchFire = now;
@@ -109,6 +111,7 @@ function tryFire(hand, side, ts) {
     vy: dy * PROJECTILE_SPEED,
   });
   _hasFired = true;
+  playFireSound();
 
   energy[side] -= ENERGY_COST;
   lastFireTime[side] = ts;

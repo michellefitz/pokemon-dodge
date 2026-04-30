@@ -8,6 +8,7 @@ import { tracking } from './tracking.js';
 import { handState } from './hands.js';
 import { startEvolutionCutscene, updateEvolutionCutscene, drawEvolutionCutscene } from './screens.js';
 import { updateProjectiles, checkProjectileCollisions, drawProjectiles, drawEnergyBars, resetProjectiles } from './projectiles.js';
+import { playEvolveSound } from './audio.js';
 
 // ============================================================
 // MODULE STATE
@@ -118,6 +119,7 @@ export function updateGame(ts, dt) {
     evolve();
     evolving = true;
     startEvolutionCutscene();
+    playEvolveSound();
     triggerFlash('#ffffff', 0.8);
     return null;
   }

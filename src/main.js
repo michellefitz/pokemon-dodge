@@ -16,6 +16,7 @@ import { submitScore, fetchLeaderboard } from './leaderboard.js';
 import { touchShoot, hasFiredSinceReset, resetProjectiles, updateProjectiles, drawProjectiles } from './projectiles.js';
 import { drawStarfield } from './renderer.js';
 import { hasCompletedOnboarding, markOnboardingDone, getSavedPlayerName, savePlayerName } from './storage.js';
+import { initAudio, toggleMute, isMuted } from './audio.js';
 
 inject();
 
@@ -127,6 +128,13 @@ function goToLeaderboard() {
 
 // ── Keyboard input ──────────────────────────────────────────
 document.addEventListener('keydown', (e) => {
+  initAudio(); // safe to call repeatedly — no-ops after first call
+
+  if (e.key === 'm' || e.key === 'M') {
+    toggleMute();
+    return;
+  }
+
   switch (state) {
     case 'title':
       if (e.key === 'Enter' || e.key === ' ') {
@@ -180,6 +188,7 @@ document.addEventListener('keydown', (e) => {
 
 // ── Touch/click input ────────────────────────────────────────
 canvas.addEventListener('click', (e) => {
+  initAudio();
   const pos = canvasCoords(e);
   switch (state) {
     case 'title':
@@ -355,6 +364,17 @@ function loop(ts) {
     case 'leaderboard':
       drawLeaderboardScreen(ctx, ts, dt, lastScore, getPlayerName());
       break;
+  }
+
+  // Mute indicator
+  if (isMuted()) {
+    ctx.save();
+    ctx.font = '13px monospace';
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'top';
+    ctx.fillText('🔇 M', W - 10, 10);
+    ctx.restore();
   }
 
   requestAnimationFrame(loop);
