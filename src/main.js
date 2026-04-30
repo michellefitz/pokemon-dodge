@@ -1,13 +1,13 @@
 import { inject } from '@vercel/analytics';
 import { W, H, COLORS } from './constants.js';
-import { initTracking, stopTracking, detectNod, resetNodDetector, tracking } from './tracking.js';
-import { initHands, detectTwoHandWave, resetWaveDetector } from './hands.js';
+import { initTracking, stopTracking, tracking } from './tracking.js';
+import { initHands } from './hands.js';
 import { selectStarter, resetPlayer, getStarterNames, player } from './player.js';
 import { resetGame, updateGame, drawGame, getScore } from './game.js';
 import {
   drawTitleScreen, drawSelectScreen, getSelectIndex, moveSelect,
   drawGameOverScreen, startGameOver,
-  drawOnboarding1, drawOnboarding2, initOnboarding2, isSkipButtonHit, setPlayerName,
+  drawOnboarding1, drawOnboarding2, initOnboarding2, setPlayerName,
   HOW_TO_PLAY_BUTTON, isHowToPlayHit,
   drawEnterNameScreen, handleNameKeydown, getPlayerName, resetName,
   drawLeaderboardScreen, resetLeaderboardScroll,
@@ -62,8 +62,6 @@ function enterOnboarding2() {
   const randomStarter = starters[Math.floor(Math.random() * starters.length)];
   selectStarter(randomStarter);
   resetProjectiles();
-  resetNodDetector();
-  resetWaveDetector();
   initOnboarding2();
   ob2Part = 1;
   ob2HasFired = false;
@@ -144,8 +142,14 @@ document.addEventListener('keydown', (e) => {
       else if (e.key === 'Escape') state = 'title';
       break;
     case 'onboarding2':
-      if (e.key === 'Enter' || e.key === ' ') advanceFromOnboarding2();
-      else if (e.key === 'Escape') state = 'title';
+      if (e.key === 'Enter' || e.key === ' ') {
+        if (ob2Part === 1) {
+          ob2Part = 2;
+          resetProjectiles();
+        } else {
+          advanceFromOnboarding2();
+        }
+      } else if (e.key === 'Escape') state = 'title';
       break;
     case 'enterName': {
       const result = handleNameKeydown(e);
@@ -188,10 +192,7 @@ canvas.addEventListener('click', (e) => {
       }
       break;
     case 'onboarding1':
-      if (isSkipButtonHit(pos)) enterOnboarding2();
-      break;
     case 'onboarding2':
-      if (isSkipButtonHit(pos)) advanceFromOnboarding2();
       break;
     case 'select': {
       const third = W / 3;
@@ -309,19 +310,10 @@ function loop(ts) {
       player.smoothX = tracking.x;
       player.smoothY = tracking.y;
 
-      // Part 1 → 2: nod to advance
-      if (ob2Part === 1 && detectNod(tracking.y)) {
-        ob2Part = 2;
-        resetProjectiles(); // fresh energy for shooting practice
-      }
-
-      // Part 2: run projectile physics, detect fire + wave to finish
+      // Part 2: run projectile physics and track first fire
       if (ob2Part === 2) {
         updateProjectiles(ts, dt);
         if (hasFiredSinceReset()) ob2HasFired = true;
-        if (ob2HasFired && detectTwoHandWave(ts)) {
-          advanceFromOnboarding2();
-        }
       }
 
       drawOnboarding2(ctx, ts, dt, ob2Part, ob2HasFired);

@@ -354,27 +354,6 @@ export function drawGameOverScreen(ctx, ts, dt, finalScore) {
 // 5. ONBOARDING SCREEN 1 — The Goal
 // ============================================================
 
-// Skip button geometry — shared with onboarding2
-export const SKIP_BUTTON = { x: W - 70, y: H - 28, w: 60, h: 22 };
-
-export function isSkipButtonHit(pos) {
-  return (
-    pos.x >= SKIP_BUTTON.x - SKIP_BUTTON.w / 2 &&
-    pos.x <= SKIP_BUTTON.x + SKIP_BUTTON.w / 2 &&
-    pos.y >= SKIP_BUTTON.y - SKIP_BUTTON.h / 2 &&
-    pos.y <= SKIP_BUTTON.y + SKIP_BUTTON.h / 2
-  );
-}
-
-function _drawSkipButton(ctx) {
-  ctx.save();
-  ctx.textAlign = 'right';
-  ctx.textBaseline = 'middle';
-  ctx.font = '13px monospace';
-  ctx.fillStyle = 'rgba(255,255,255,0.45)';
-  ctx.fillText('Skip \u2192', SKIP_BUTTON.x + SKIP_BUTTON.w / 2, SKIP_BUTTON.y);
-  ctx.restore();
-}
 
 // All obstacle/attack sprites for the "Dodge" column
 const _DODGE_SPRITES = [
@@ -518,8 +497,6 @@ export function drawOnboarding1(ctx, ts, dt) {
   }
 
   ctx.restore();
-
-  _drawSkipButton(ctx);
 }
 
 // ============================================================
@@ -572,7 +549,6 @@ export function drawOnboarding2(ctx, ts, dt, part, hasFired) {
     ctx.globalAlpha = 1;
   }
 
-  _drawSkipButton(ctx);
 }
 
 function _drawOb2Part1(ctx, ts, dt) {
@@ -597,7 +573,7 @@ function _drawOb2Part1(ctx, ts, dt) {
   ctx.font = '15px monospace';
   ctx.globalAlpha = 0.75;
   ctx.fillStyle = '#ffffff';
-  ctx.fillText("When you're ready, nod to continue", W / 2, H * 0.26);
+  ctx.fillText('Press Enter when ready', W / 2, H * 0.26);
   ctx.globalAlpha = 1;
 
   ctx.restore();
@@ -608,27 +584,34 @@ function _drawOb2Part2(ctx, ts, dt, hasFired) {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
 
-  // Two open hands illustration
-  const handY = H * 0.50;
-  ctx.globalAlpha = 0.85;
-  drawOpenHand(ctx, W / 2 - 60, handY);
-  drawOpenHand(ctx, W / 2 + 60, handY);
-  ctx.globalAlpha = 1;
+  // Live Pokemon at head position — same as real gameplay
+  const px = tracking.x;
+  const py = tracking.y;
+  const starterSprites = STARTER_SPRITES[player.starter]?.[0];
+  if (starterSprites) {
+    drawSprite(ctx, starterSprites.idle, starterSprites.palette, px, py, SPRITE_SCALE);
+  }
 
   // Main instruction
   ctx.font = 'bold 20px monospace';
-  drawTextWithOutline(ctx, 'Lift and open your hands to fire', W / 2, H * 0.22, '#ffffff', 2);
+  drawTextWithOutline(ctx, 'Open your hands to fire', W / 2, H * 0.10, '#ffffff', 2);
 
   // Prompt changes after first shot
   const prompt = hasFired
-    ? 'Now wave both hands to start!'
+    ? 'Press Enter to start playing!'
     : 'Raise an open hand toward the camera';
 
   ctx.font = '15px monospace';
   ctx.globalAlpha = 0.75;
   ctx.fillStyle = hasFired ? COLORS.scoreYellow : '#ffffff';
-  ctx.fillText(prompt, W / 2, H * 0.30);
+  ctx.fillText(prompt, W / 2, H * 0.18);
   ctx.globalAlpha = 1;
+
+  // Blinking Enter prompt once they've fired
+  if (hasFired && Math.floor(ts / 500) % 2 === 0) {
+    ctx.font = 'bold 15px monospace';
+    drawTextWithOutline(ctx, 'PRESS ENTER TO CONTINUE', W / 2, H - 22, '#ffffff', 2);
+  }
 
   // Draw any live projectiles so the player sees the effect
   // (projectiles are drawn by main.js calling drawProjectiles separately)
