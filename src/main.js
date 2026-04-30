@@ -45,6 +45,7 @@ const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || 'ontou
 
 // Mobile setup — no camera on mobile
 if (isMobile) {
+  document.body.classList.add('mobile-mode');
   initMobileControls();
   markOnboardingDone(); // onboarding teaches camera controls — not relevant on mobile
   // Hide camera status indicator and remove video element so no permission is requested
@@ -291,6 +292,21 @@ function mobileNameEntry() {
   state = 'title';
 }
 
+// ── Cross-platform nudge (shown on game over) ───────────────
+function drawCrossPlatformNudge(ctx, ts) {
+  const msg = isMobile
+    ? 'Try this on desktop — control your Pokémon with face tracking!'
+    : 'Try this on mobile with the joystick — can you beat your score?';
+
+  ctx.save();
+  ctx.font = '12px monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = `rgba(255,255,255,${0.38 + Math.sin(ts * 0.0018) * 0.12})`;
+  ctx.fillText(msg, W / 2, H - 28);
+  ctx.restore();
+}
+
 // ── "Waiting for camera" screen ─────────────────────────────
 function drawWaitingScreen(ctx, ts, dt) {
   ctx.fillStyle = COLORS.bg;
@@ -410,6 +426,7 @@ function loop(ts) {
     case 'gameover':
       drawGame(ctx, ts, 0);
       drawGameOverScreen(ctx, ts, dt, getScore());
+      drawCrossPlatformNudge(ctx, ts);
       break;
     case 'leaderboard':
       drawLeaderboardScreen(ctx, ts, dt, lastScore, getPlayerName());

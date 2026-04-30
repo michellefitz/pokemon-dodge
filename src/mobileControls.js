@@ -25,7 +25,6 @@ export function hideMobileControls() {
 export function initMobileControls() {
   if (_el) return;
 
-  const app = document.getElementById('app');
   _el = document.createElement('div');
   _el.id = 'mobile-controls';
   _el.innerHTML = `
@@ -36,7 +35,8 @@ export function initMobileControls() {
       <div id="mc-right-base"><div id="mc-right-thumb"></div></div>
     </div>
   `;
-  app.appendChild(_el);
+  // Append to body (after #app) so controls sit below the canvas in the layout
+  document.body.appendChild(_el);
 
   _leftBaseEl   = document.getElementById('mc-left-base');
   _leftThumbEl  = document.getElementById('mc-left-thumb');
