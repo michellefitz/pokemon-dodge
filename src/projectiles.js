@@ -40,9 +40,18 @@ export function resetProjectiles() {
   canFire.left = true;
   canFire.right = true;
   lastTouchFire = 0;
+  _hasFired = false;
 }
 
 let lastTouchFire = 0;
+
+// ── Fire detection for onboarding ──────────────────────────────────────────
+let _hasFired = false;
+
+/** Returns true if any projectile has been fired since the last reset. */
+export function hasFiredSinceReset() {
+  return _hasFired;
+}
 
 // Touch-to-shoot for mobile — fires toward the tapped position
 export function touchShoot(tapX, tapY) {
@@ -67,6 +76,7 @@ export function touchShoot(tapX, tapY) {
     vx: dx * PROJECTILE_SPEED,
     vy: dy * PROJECTILE_SPEED,
   });
+  _hasFired = true;
 
   energy[side] -= ENERGY_COST;
   lastTouchFire = now;
@@ -98,6 +108,7 @@ function tryFire(hand, side, ts) {
     vx: dx * PROJECTILE_SPEED,
     vy: dy * PROJECTILE_SPEED,
   });
+  _hasFired = true;
 
   energy[side] -= ENERGY_COST;
   lastFireTime[side] = ts;
