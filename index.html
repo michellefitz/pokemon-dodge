@@ -86,45 +86,44 @@
       touch-action: none;
     }
 
-    /* Joystick base — 28% of its zone width (= 14% of canvas) */
-    #mc-base {
+    /* Shared joystick base size — 28% of zone width */
+    #mc-left-base,
+    #mc-right-base {
       width: 28%;
       aspect-ratio: 1;
       border-radius: 50%;
-      background: rgba(0, 0, 0, 0.42);
-      border: 2px solid rgba(255, 255, 255, 0.18);
       position: relative;
       flex-shrink: 0;
     }
 
-    /* Joystick thumb */
-    #mc-thumb {
+    /* Left joystick — dark/neutral */
+    #mc-left-base {
+      background: rgba(0, 0, 0, 0.42);
+      border: 2px solid rgba(255, 255, 255, 0.18);
+    }
+
+    /* Right joystick — amber (fire direction) */
+    #mc-right-base {
+      background: rgba(120, 75, 0, 0.42);
+      border: 2px solid rgba(239, 159, 39, 0.35);
+    }
+
+    /* Shared thumb */
+    #mc-left-thumb,
+    #mc-right-thumb {
       position: absolute;
       left: 50%;
       top: 50%;
       width: 42%;
       aspect-ratio: 1;
       border-radius: 50%;
-      background: rgba(210, 210, 225, 0.75);
       transform: translate(-50%, -50%);
       pointer-events: none;
       will-change: transform;
     }
 
-    /* Fire button */
-    #mc-fire {
-      width: 28%;
-      aspect-ratio: 1;
-      border-radius: 50%;
-      background: rgba(239, 159, 39, 0.42);
-      border: 2px solid rgba(239, 159, 39, 0.35);
-      flex-shrink: 0;
-      transition: background 0.05s, border-color 0.05s;
-    }
-    #mc-fire.pressed {
-      background: rgba(239, 159, 39, 0.82);
-      border-color: rgba(255, 210, 80, 0.8);
-    }
+    #mc-left-thumb  { background: rgba(210, 210, 225, 0.75); }
+    #mc-right-thumb { background: rgba(239, 159, 39, 0.85); }
   </style>
 </head>
 <body>

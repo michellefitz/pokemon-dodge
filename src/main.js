@@ -17,7 +17,7 @@ import { touchShoot, hasFiredSinceReset, resetProjectiles, updateProjectiles, dr
 import { drawStarfield } from './renderer.js';
 import { hasCompletedOnboarding, markOnboardingDone, getSavedPlayerName, savePlayerName } from './storage.js';
 import { initAudio, toggleMute, isMuted } from './audio.js';
-import { initMobileControls, getJoystickVector, isMobileFireActive, showMobileControls, hideMobileControls } from './mobileControls.js';
+import { initMobileControls, getJoystickVector, getRightJoystickVector, showMobileControls, hideMobileControls } from './mobileControls.js';
 
 inject();
 
@@ -43,10 +43,15 @@ let ob2HasFired = false;
 // Detect mobile (touch device)
 const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || 'ontouchstart' in window;
 
-// Mobile setup
+// Mobile setup — no camera on mobile
 if (isMobile) {
   initMobileControls();
   markOnboardingDone(); // onboarding teaches camera controls — not relevant on mobile
+  // Hide camera status indicator and remove video element so no permission is requested
+  const statusDot = document.getElementById('statusDot');
+  if (statusDot) statusDot.style.display = 'none';
+  const videoEl = document.getElementById('videoEl');
+  if (videoEl) videoEl.remove();
 }
 
 // Pre-fill name for returning players
@@ -377,9 +382,11 @@ function loop(ts) {
           tracking.y = player.smoothY;
         }
 
-        // Fire button shoots straight up
-        if (isMobileFireActive()) {
-          touchShoot(player.smoothX, 0);
+        // Right joystick fires in the direction it's pushed
+        const rJoy = getRightJoystickVector();
+        const fireDead = 0.2;
+        if (Math.abs(rJoy.x) > fireDead || Math.abs(rJoy.y) > fireDead) {
+          touchShoot(player.smoothX + rJoy.x * 500, player.smoothY + rJoy.y * 500);
         }
       } else {
         // Desktop: touch-drag shooting
