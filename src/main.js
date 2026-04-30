@@ -161,7 +161,7 @@ document.addEventListener('keydown', (e) => {
     case 'title':
       if (e.key === 'Enter' || e.key === ' ') {
         if (isMobile || hasCompletedOnboarding()) {
-          state = 'select';
+          state = (isMobile && !getSavedPlayerName()) ? 'enterName' : 'select';
         } else {
           state = 'onboarding1';
         }
@@ -217,7 +217,7 @@ canvas.addEventListener('click', (e) => {
       if (!isMobile && hasCompletedOnboarding() && isHowToPlayHit(pos)) {
         state = 'onboarding1';
       } else if (isMobile || hasCompletedOnboarding()) {
-        state = 'select';
+        state = (isMobile && !getSavedPlayerName()) ? 'enterName' : 'select';
       } else {
         state = 'onboarding1';
       }
@@ -274,7 +274,7 @@ canvas.addEventListener('touchend', (e) => {
 
 // ── Mobile name entry ───────────────────────────────────────
 function mobileNameEntry() {
-  const name = prompt('Enter your name (max 12 characters):');
+  const name = prompt('Enter your name for the leaderboard (max 12 characters):');
   if (name && name.trim()) {
     const clean = name.trim().replace(/[^a-zA-Z0-9 ]/g, '').slice(0, 12);
     for (const ch of clean) {
@@ -284,8 +284,11 @@ function mobileNameEntry() {
       handleNameKeydown({ key: 'Enter' });
       savePlayerName(getPlayerName());
       state = 'select';
+      return;
     }
   }
+  // Cancelled or no valid name — back to title
+  state = 'title';
 }
 
 // ── "Waiting for camera" screen ─────────────────────────────
