@@ -62,6 +62,67 @@ function countExtendedFingers(landmarks) {
   return count;
 }
 
+// ── Two-hand wave detection ─────────────────────────────────────────────────
+// Accumulates total X travel for each hand over a rolling time window.
+// Returns true when both hands have moved at least WAVE_MIN_TRAVEL_PX in the window.
+
+const WAVE_WINDOW_MS = 1000;
+const WAVE_MIN_TRAVEL_PX = 50;
+
+let _waveLeftSamples = [];  // [{t, x}, ...]
+let _waveRightSamples = [];
+let _waveLastLeftX = null;
+let _waveLastRightX = null;
+
+/**
+ * Call once per frame with the current timestamp (ms).
+ * Returns true when both hands have each travelled ≥ WAVE_MIN_TRAVEL_PX
+ * within the last WAVE_WINDOW_MS.
+ */
+export function detectTwoHandWave(t) {
+  const cutoff = t - WAVE_WINDOW_MS;
+
+  // Record samples for each active hand
+  if (handState.left.active) {
+    const x = handState.left.x;
+    if (_waveLastLeftX !== null) {
+      const travel = Math.abs(x - _waveLastLeftX);
+      _waveLeftSamples.push({ t, travel });
+    }
+    _waveLastLeftX = x;
+  } else {
+    _waveLastLeftX = null;
+  }
+
+  if (handState.right.active) {
+    const x = handState.right.x;
+    if (_waveLastRightX !== null) {
+      const travel = Math.abs(x - _waveLastRightX);
+      _waveRightSamples.push({ t, travel });
+    }
+    _waveLastRightX = x;
+  } else {
+    _waveLastRightX = null;
+  }
+
+  // Evict old samples
+  _waveLeftSamples  = _waveLeftSamples.filter(s => s.t > cutoff);
+  _waveRightSamples = _waveRightSamples.filter(s => s.t > cutoff);
+
+  const leftTravel  = _waveLeftSamples.reduce((sum, s) => sum + s.travel, 0);
+  const rightTravel = _waveRightSamples.reduce((sum, s) => sum + s.travel, 0);
+
+  return leftTravel >= WAVE_MIN_TRAVEL_PX && rightTravel >= WAVE_MIN_TRAVEL_PX;
+}
+
+/** Reset wave detector state (call when entering onboarding2). */
+export function resetWaveDetector() {
+  _waveLeftSamples = [];
+  _waveRightSamples = [];
+  _waveLastLeftX = null;
+  _waveLastRightX = null;
+}
+
 function onHandResults(results) {
   // Reset both
   handState.left.active = false;
