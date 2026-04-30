@@ -2,6 +2,11 @@
 const API_URL = '/api/scores';
 
 let cachedScores = [];
+let _loading = false;
+
+export function isLeaderboardLoading() {
+  return _loading;
+}
 
 // Generate HMAC-like token using Web Crypto API
 // This matches the server's HMAC verification
@@ -38,6 +43,7 @@ export async function submitScore(name, score) {
 }
 
 export async function fetchLeaderboard() {
+  _loading = true;
   try {
     const res = await fetch(API_URL);
     if (res.ok) {
@@ -46,6 +52,7 @@ export async function fetchLeaderboard() {
   } catch (e) {
     console.warn('Failed to fetch leaderboard:', e);
   }
+  _loading = false;
   return cachedScores;
 }
 

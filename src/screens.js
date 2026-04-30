@@ -8,7 +8,7 @@ import {
 } from './sprites.js';
 import { getStarterNames, getStarterDef, player } from './player.js';
 import { drawStarfield } from './renderer.js';
-import { getCachedScores } from './leaderboard.js';
+import { getCachedScores, isLeaderboardLoading } from './leaderboard.js';
 import { tracking } from './tracking.js';
 
 // ============================================================
@@ -901,7 +901,8 @@ export function drawLeaderboardScreen(ctx, ts, dt, playerScore, playerNameStr) {
   if (scores.length === 0) {
     ctx.font = '16px monospace';
     ctx.fillStyle = 'rgba(255,255,255,0.5)';
-    ctx.fillText('No scores yet — you could be first!', W / 2, H / 2);
+    const emptyMsg = isLeaderboardLoading() ? 'Loading...' : 'No scores yet — you could be first!';
+    ctx.fillText(emptyMsg, W / 2, H / 2);
   } else {
     // Table header
     const tableTop = 85;
@@ -926,8 +927,8 @@ export function drawLeaderboardScreen(ctx, ts, dt, playerScore, playerNameStr) {
     ctx.lineTo(scoreX, tableTop + 12);
     ctx.stroke();
 
-    // Scores — show top 12 that fit on screen
-    const maxVisible = 12;
+    // Scores — show top 10 that fit on screen
+    const maxVisible = 10;
     const visibleScores = scores.slice(0, maxVisible);
 
     for (let i = 0; i < visibleScores.length; i++) {
