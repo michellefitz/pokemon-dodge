@@ -51,8 +51,11 @@ export default async function handler(req, res) {
     if (req.method === 'GET') {
       const scores = await redis.zrange(LEADERBOARD_KEY, 0, MAX_ENTRIES - 1, { rev: true, withScores: true });
 
-      // Upstash SDK returns [{member, score}, ...] when withScores: true
-      const leaderboard = scores.map(entry => ({ name: entry.member, score: entry.score }));
+      // Upstash returns a flat interleaved array: [name, score, name, score, ...]
+      const leaderboard = [];
+      for (let i = 0; i < scores.length; i += 2) {
+        leaderboard.push({ name: scores[i], score: scores[i + 1] });
+      }
 
       return res.status(200).json(leaderboard);
     }
