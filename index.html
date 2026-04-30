@@ -2,7 +2,7 @@
 <html lang="en" translate="no">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta http-equiv="Content-Language" content="en">
   <meta name="google" content="notranslate">
   <title>Pokémon Dodge</title>
@@ -46,6 +46,109 @@
     }
     #dot.active { background: #1D9E75; }
     #statusLabel { font-size: 12px; color: rgba(255,255,255,0.6); }
+
+    /* ── Mobile gamepad overlay ──────────────────────────────── */
+    #mobile-controls {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      display: none;
+    }
+    #mobile-controls.visible { display: block; }
+
+    /* D-pad */
+    #mc-dpad {
+      position: absolute;
+      bottom: 18px;
+      left: 18px;
+      pointer-events: all;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+    .mc-dpad-row {
+      display: flex;
+      gap: 2px;
+    }
+    .mc-dpad-btn {
+      width: 54px;
+      height: 54px;
+      background: rgba(8, 8, 24, 0.80);
+      border: 2px solid rgba(255, 255, 255, 0.30);
+      color: rgba(255, 255, 255, 0.85);
+      font-size: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: none;
+      outline: none;
+      border-radius: 6px;
+      font-family: monospace;
+    }
+    .mc-dpad-btn.pressed {
+      background: rgba(239, 159, 39, 0.30);
+      border-color: rgba(239, 159, 39, 0.75);
+    }
+    .mc-dpad-center {
+      width: 54px;
+      height: 54px;
+      background: rgba(8, 8, 24, 0.60);
+      border: 2px solid rgba(255, 255, 255, 0.10);
+      border-radius: 4px;
+    }
+
+    /* Fire buttons */
+    #mc-fire {
+      position: absolute;
+      bottom: 18px;
+      right: 18px;
+      pointer-events: all;
+      width: 140px;
+      height: 140px;
+    }
+    .mc-fire-btn {
+      position: absolute;
+      width: 62px;
+      height: 62px;
+      border-radius: 50%;
+      border: 3px solid rgba(255, 255, 255, 0.45);
+      font-size: 20px;
+      font-weight: bold;
+      font-family: 'Courier New', monospace;
+      cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: none;
+      outline: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 0 rgba(0, 0, 0, 0.55);
+      transition: filter 0.05s, transform 0.05s;
+    }
+    .mc-fire-btn.pressed {
+      filter: brightness(1.5);
+      transform: translateY(2px);
+      box-shadow: 0 2px 0 rgba(0, 0, 0, 0.55);
+    }
+    #mc-btn-b {
+      background: rgba(160, 130, 0, 0.85);
+      color: #fff;
+      top: 0;
+      left: 0;
+    }
+    #mc-btn-a {
+      background: rgba(175, 30, 30, 0.85);
+      color: #fff;
+      bottom: 0;
+      right: 0;
+    }
   </style>
 </head>
 <body>

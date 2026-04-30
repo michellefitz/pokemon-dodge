@@ -17,6 +17,7 @@ import { touchShoot, hasFiredSinceReset, resetProjectiles, updateProjectiles, dr
 import { drawStarfield } from './renderer.js';
 import { hasCompletedOnboarding, markOnboardingDone, getSavedPlayerName, savePlayerName } from './storage.js';
 import { initAudio, toggleMute, isMuted } from './audio.js';
+import { initMobileControls, getDpadState, isMobileFireActive, showMobileControls, hideMobileControls } from './mobileControls.js';
 
 inject();
 
@@ -26,7 +27,7 @@ canvas.height = H;
 const ctx = canvas.getContext('2d');
 
 // States: title → onboarding1 → onboarding2 → enterName → select → waitingForCamera → playing → gameover → leaderboard
-// Returning players: title → select → waitingForCamera → playing
+// Mobile flow: title → enterName → select → playing (no camera, no onboarding)
 let state = 'title';
 let lastTs = 0;
 let lastScore = 0;
@@ -36,11 +37,17 @@ let cameraStatusText = 'Loading camera...';
 let cameraInitialized = false;
 
 // Onboarding 2 state
-let ob2Part = 1;    // 1 = head control, 2 = hand control
+let ob2Part = 1;
 let ob2HasFired = false;
 
-// Detect mobile
+// Detect mobile (touch device)
 const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || 'ontouchstart' in window;
+
+// Mobile setup
+if (isMobile) {
+  initMobileControls();
+  markOnboardingDone(); // onboarding teaches camera controls — not relevant on mobile
+}
 
 // Pre-fill name for returning players
 if (hasCompletedOnboarding()) {
@@ -83,11 +90,21 @@ function advanceFromOnboarding2() {
   state = 'enterName';
 }
 
-// Start camera, wait for face detection, then begin playing
+// Start playing — skip camera init on mobile
 function startPlaying() {
   const chosen = getStarterNames()[getSelectIndex()];
   selectStarter(chosen);
   resetGame();
+
+  if (isMobile) {
+    // Reset player to centre for d-pad control
+    player.smoothX = W / 2;
+    player.smoothY = H / 2;
+    tracking.x = W / 2;
+    tracking.y = H / 2;
+    state = 'playing';
+    return;
+  }
 
   // Camera already running (initialized during onboarding) — go straight to playing
   if (cameraInitialized) {
@@ -103,7 +120,6 @@ function startPlaying() {
     if (mode === 'mouse') {
       cameraStatusText = 'Mouse mode — starting...';
     }
-    // Small delay so user sees "face detected" before game starts
     setTimeout(() => {
       if (state === 'waitingForCamera') {
         cameraInitialized = true;
@@ -115,9 +131,10 @@ function startPlaying() {
 
 function goToLeaderboard() {
   lastScore = getScore();
-  // Stop camera when game ends
-  stopTracking();
-  cameraInitialized = false;
+  if (!isMobile) {
+    stopTracking();
+    cameraInitialized = false;
+  }
   state = 'leaderboard';
   submitScore(getPlayerName(), lastScore).then(() => {
     return fetchLeaderboard();
@@ -128,7 +145,7 @@ function goToLeaderboard() {
 
 // ── Keyboard input ──────────────────────────────────────────
 document.addEventListener('keydown', (e) => {
-  initAudio(); // safe to call repeatedly — no-ops after first call
+  initAudio();
 
   if (e.key === 'm' || e.key === 'M') {
     toggleMute();
@@ -138,7 +155,7 @@ document.addEventListener('keydown', (e) => {
   switch (state) {
     case 'title':
       if (e.key === 'Enter' || e.key === ' ') {
-        if (hasCompletedOnboarding()) {
+        if (isMobile || hasCompletedOnboarding()) {
           state = 'select';
         } else {
           state = 'onboarding1';
@@ -173,7 +190,7 @@ document.addEventListener('keydown', (e) => {
       else if (e.key === 'Enter' || e.key === ' ') startPlaying();
       break;
     case 'waitingForCamera':
-      break; // can't skip
+      break;
     case 'playing':
       break;
     case 'gameover':
@@ -192,9 +209,9 @@ canvas.addEventListener('click', (e) => {
   const pos = canvasCoords(e);
   switch (state) {
     case 'title':
-      if (hasCompletedOnboarding() && isHowToPlayHit(pos)) {
+      if (!isMobile && hasCompletedOnboarding() && isHowToPlayHit(pos)) {
         state = 'onboarding1';
-      } else if (hasCompletedOnboarding()) {
+      } else if (isMobile || hasCompletedOnboarding()) {
         state = 'select';
       } else {
         state = 'onboarding1';
@@ -222,11 +239,11 @@ canvas.addEventListener('click', (e) => {
   }
 });
 
-// ── Touch shooting ──────────────────────────────────────────
+// ── Touch shooting (desktop/fallback only — mobile uses buttons) ────
 let activeTouches = {};
 
 canvas.addEventListener('touchstart', (e) => {
-  if (state !== 'playing') return;
+  if (state !== 'playing' || isMobile) return;
   e.preventDefault();
   for (const touch of e.changedTouches) {
     const pos = canvasCoords({ touches: [touch] });
@@ -236,7 +253,7 @@ canvas.addEventListener('touchstart', (e) => {
 }, { passive: false });
 
 canvas.addEventListener('touchmove', (e) => {
-  if (state !== 'playing') return;
+  if (state !== 'playing' || isMobile) return;
   e.preventDefault();
   for (const touch of e.changedTouches) {
     const pos = canvasCoords({ touches: [touch] });
@@ -276,14 +293,12 @@ function drawWaitingScreen(ctx, ts, dt) {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
 
-  // Animated dots
   const dots = '.'.repeat(Math.floor(ts / 400) % 4);
 
   ctx.font = 'bold 22px monospace';
   ctx.fillStyle = '#fff';
   ctx.fillText(`${cameraStatusText}${dots}`, W / 2, H * 0.4);
 
-  // Pulsing circle animation
   ctx.globalAlpha = 0.3 + Math.sin(ts * 0.004) * 0.2;
   ctx.strokeStyle = COLORS.scoreYellow;
   ctx.lineWidth = 3;
@@ -305,21 +320,25 @@ function loop(ts) {
   const dt = lastTs ? Math.min(ts - lastTs, 50) : 16;
   lastTs = ts;
 
+  // Show/hide mobile controls based on state
+  if (isMobile) {
+    if (state === 'playing') showMobileControls();
+    else hideMobileControls();
+  }
+
   const isReturning = hasCompletedOnboarding();
 
   switch (state) {
     case 'title':
-      drawTitleScreen(ctx, ts, dt, isReturning);
+      drawTitleScreen(ctx, ts, dt, isReturning && !isMobile);
       break;
     case 'onboarding1':
       drawOnboarding1(ctx, ts, dt);
       break;
     case 'onboarding2': {
-      // Keep player position synced with head tracking so projectiles originate correctly
       player.smoothX = tracking.x;
       player.smoothY = tracking.y;
 
-      // Part 2: run projectile physics and track first fire
       if (ob2Part === 2) {
         updateProjectiles(ts, dt);
         if (hasFiredSinceReset()) ob2HasFired = true;
@@ -345,9 +364,27 @@ function loop(ts) {
       drawWaitingScreen(ctx, ts, dt);
       break;
     case 'playing': {
-      for (const id in activeTouches) {
-        touchShoot(activeTouches[id].x, activeTouches[id].y);
+      if (isMobile) {
+        // D-pad drives player position directly
+        const dpad = getDpadState();
+        const speed = 6 * (dt / 16);
+        const r = 22;
+        if (dpad.left)  { player.smoothX = Math.max(r, player.smoothX - speed); tracking.x = player.smoothX; }
+        if (dpad.right) { player.smoothX = Math.min(W - r, player.smoothX + speed); tracking.x = player.smoothX; }
+        if (dpad.up)    { player.smoothY = Math.max(r, player.smoothY - speed); tracking.y = player.smoothY; }
+        if (dpad.down)  { player.smoothY = Math.min(H - r, player.smoothY + speed); tracking.y = player.smoothY; }
+
+        // Fire buttons shoot straight up
+        if (isMobileFireActive()) {
+          touchShoot(player.smoothX, 0);
+        }
+      } else {
+        // Desktop: touch-drag shooting
+        for (const id in activeTouches) {
+          touchShoot(activeTouches[id].x, activeTouches[id].y);
+        }
       }
+
       const result = updateGame(ts, dt);
       drawGame(ctx, ts, dt);
       if (result === 'gameover') {

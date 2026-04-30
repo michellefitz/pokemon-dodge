@@ -1,8 +1,6 @@
-// Canvas — portrait on mobile, landscape on desktop
-const isMobile = typeof navigator !== 'undefined'
-  && (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || ('ontouchstart' in window && window.innerWidth < 800));
-export const W = isMobile ? 500 : 800;
-export const H = isMobile ? 800 : 500;
+// Canvas — landscape on all platforms (mobile uses gamepad overlay)
+export const W = 800;
+export const H = 500;
 
 // Colors
 export const COLORS = {
