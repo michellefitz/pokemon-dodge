@@ -12,6 +12,7 @@ import {
 import { getStarterNames, getStarterDef, player } from './player.js';
 import { drawStarfield } from './renderer.js';
 import { getCachedScores } from './leaderboard.js';
+import { tracking } from './tracking.js';
 
 // ============================================================
 // HELPERS
@@ -503,6 +504,120 @@ export function drawOnboarding1(ctx, ts, dt) {
   ctx.restore();
 
   _drawSkipButton(ctx);
+}
+
+// ============================================================
+// 5c. ONBOARDING SCREEN 2 — Controls Practice
+// ============================================================
+
+// Internal state — reset by initOnboarding2()
+let _ob2Part = 1;            // 1 = head control, 2 = hand control
+let _ob2FadeAlpha = 0;       // fade-in alpha for part 2 (0→1)
+
+/** Call when entering onboarding2 state. */
+export function initOnboarding2() {
+  _ob2Part = 1;
+  _ob2FadeAlpha = 0;
+}
+
+/**
+ * Draw onboarding screen 2.
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {number} ts   - timestamp ms
+ * @param {number} dt   - frame delta ms
+ * @param {number} part - 1 (head control) or 2 (hand control)
+ * @param {boolean} hasFired - true once player has fired a projectile
+ */
+export function drawOnboarding2(ctx, ts, dt, part, hasFired) {
+  ctx.fillStyle = COLORS.bg;
+  ctx.fillRect(0, 0, W, H);
+  drawStarfield(ctx, dt);
+
+  // Transition: fade part 1 out / part 2 in
+  if (part === 2) {
+    _ob2FadeAlpha = Math.min(1, _ob2FadeAlpha + dt / 300);
+  }
+
+  if (part === 1) {
+    _drawOb2Part1(ctx, ts, dt);
+  } else {
+    // Cross-fade: part1 fades to 0, part2 fades in
+    const p1Alpha = Math.max(0, 1 - _ob2FadeAlpha * 2);
+    const p2Alpha = _ob2FadeAlpha;
+
+    if (p1Alpha > 0) {
+      ctx.globalAlpha = p1Alpha;
+      _drawOb2Part1(ctx, ts, dt);
+      ctx.globalAlpha = 1;
+    }
+
+    ctx.globalAlpha = p2Alpha;
+    _drawOb2Part2(ctx, ts, dt, hasFired);
+    ctx.globalAlpha = 1;
+  }
+
+  _drawSkipButton(ctx);
+}
+
+function _drawOb2Part1(ctx, ts, dt) {
+  ctx.save();
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  // Player Pokemon following head position
+  const px = tracking.x;
+  const py = tracking.y;
+
+  // Use charmander stage-0 idle sprite (random starter would require passing in)
+  const starterSprites = STARTER_SPRITES['charmander']?.[0];
+  if (starterSprites) {
+    drawSprite(ctx, starterSprites.idle, starterSprites.palette, px, py, SPRITE_SCALE);
+  }
+
+  // Instructions
+  ctx.font = 'bold 20px monospace';
+  drawTextWithOutline(ctx, 'Move your head to control your Pokémon', W / 2, H * 0.18, '#ffffff', 2);
+
+  ctx.font = '15px monospace';
+  ctx.globalAlpha = 0.75;
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText("When you're ready, nod to continue", W / 2, H * 0.26);
+  ctx.globalAlpha = 1;
+
+  ctx.restore();
+}
+
+function _drawOb2Part2(ctx, ts, dt, hasFired) {
+  ctx.save();
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  // Two open hands illustration
+  const handY = H * 0.50;
+  ctx.globalAlpha = 0.85;
+  drawOpenHand(ctx, W / 2 - 60, handY);
+  drawOpenHand(ctx, W / 2 + 60, handY);
+  ctx.globalAlpha = 1;
+
+  // Main instruction
+  ctx.font = 'bold 20px monospace';
+  drawTextWithOutline(ctx, 'Lift and open your hands to fire', W / 2, H * 0.22, '#ffffff', 2);
+
+  // Prompt changes after first shot
+  const prompt = hasFired
+    ? 'Now wave both hands to start!'
+    : 'Raise an open hand toward the camera';
+
+  ctx.font = '15px monospace';
+  ctx.globalAlpha = 0.75;
+  ctx.fillStyle = hasFired ? COLORS.scoreYellow : '#ffffff';
+  ctx.fillText(prompt, W / 2, H * 0.30);
+  ctx.globalAlpha = 1;
+
+  // Draw any live projectiles so the player sees the effect
+  // (projectiles are drawn by main.js calling drawProjectiles separately)
+
+  ctx.restore();
 }
 
 // ============================================================
