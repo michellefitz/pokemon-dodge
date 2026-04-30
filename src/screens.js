@@ -568,8 +568,8 @@ function _drawOb2Part1(ctx, ts, dt) {
   const px = tracking.x;
   const py = tracking.y;
 
-  // Use charmander stage-0 idle sprite (random starter would require passing in)
-  const starterSprites = STARTER_SPRITES['charmander']?.[0];
+  // Use the player's current starter sprite
+  const starterSprites = STARTER_SPRITES[player.starter]?.[0];
   if (starterSprites) {
     drawSprite(ctx, starterSprites.idle, starterSprites.palette, px, py, SPRITE_SCALE);
   }
