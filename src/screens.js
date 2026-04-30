@@ -1,5 +1,14 @@
 import { W, H, COLORS, SPRITE_SCALE } from './constants.js';
-import { drawSprite, STARTER_SPRITES } from './sprites.js';
+import {
+  drawSprite,
+  STARTER_SPRITES,
+  POKEBALL_SPRITES,
+  WILD_SPRITES,
+  BERRY_SPRITES,
+  EMBER_SPRITE,
+  WATER_SHOT_SPRITE,
+  RAZOR_LEAF_SPRITE,
+} from './sprites.js';
 import { getStarterNames, getStarterDef, player } from './player.js';
 import { drawStarfield } from './renderer.js';
 import { getCachedScores } from './leaderboard.js';
@@ -325,7 +334,179 @@ export function drawGameOverScreen(ctx, ts, dt, finalScore) {
 }
 
 // ============================================================
-// 5. INSTRUCTIONS SCREEN
+// 5. ONBOARDING SCREEN 1 — The Goal
+// ============================================================
+
+// Skip button geometry — shared with onboarding2
+export const SKIP_BUTTON = { x: W - 70, y: H - 28, w: 60, h: 22 };
+
+export function isSkipButtonHit(pos) {
+  return (
+    pos.x >= SKIP_BUTTON.x - SKIP_BUTTON.w / 2 &&
+    pos.x <= SKIP_BUTTON.x + SKIP_BUTTON.w / 2 &&
+    pos.y >= SKIP_BUTTON.y - SKIP_BUTTON.h / 2 &&
+    pos.y <= SKIP_BUTTON.y + SKIP_BUTTON.h / 2
+  );
+}
+
+function _drawSkipButton(ctx) {
+  ctx.save();
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'middle';
+  ctx.font = '13px monospace';
+  ctx.fillStyle = 'rgba(255,255,255,0.45)';
+  ctx.fillText('Skip \u2192', SKIP_BUTTON.x + SKIP_BUTTON.w / 2, SKIP_BUTTON.y);
+  ctx.restore();
+}
+
+// All obstacle/attack sprites for the "Dodge" column
+const _DODGE_SPRITES = [
+  { sprite: POKEBALL_SPRITES.pokeball,   label: 'Pokéball'  },
+  { sprite: POKEBALL_SPRITES.greatball,  label: 'Greatball' },
+  { sprite: POKEBALL_SPRITES.ultraball,  label: 'Ultraball' },
+  { sprite: POKEBALL_SPRITES.masterball, label: 'Masterball'},
+  { sprite: WILD_SPRITES.zubat,          label: 'Zubat'     },
+  { sprite: WILD_SPRITES.geodude,        label: 'Geodude'   },
+  { sprite: WILD_SPRITES.gastly,         label: 'Gastly'    },
+  { sprite: WILD_SPRITES.pidgey,         label: 'Pidgey'    },
+  { sprite: EMBER_SPRITE,                label: 'Ember'     },
+  { sprite: WATER_SHOT_SPRITE,           label: 'Water Gun' },
+  { sprite: RAZOR_LEAF_SPRITE,           label: 'Vine Whip' },
+];
+
+const _BERRY_DEFS = [
+  { key: 'oran',   effect: '+10 pts'    },
+  { key: 'sitrus', effect: '+1 life'    },
+  { key: 'rawst',  effect: 'invincible' },
+  { key: 'lum',    effect: 'clear screen'},
+];
+
+export function drawOnboarding1(ctx, ts, dt) {
+  ctx.fillStyle = COLORS.bg;
+  ctx.fillRect(0, 0, W, H);
+  drawStarfield(ctx, dt);
+
+  ctx.save();
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  // ── Title ──────────────────────────────────────────────────
+  ctx.font = 'bold 22px monospace';
+  drawTextWithOutline(ctx, 'HOW TO PLAY', W / 2, 28, COLORS.scoreYellow, 3);
+
+  // Three column centres
+  const col1X = Math.floor(W * 0.18);
+  const col2X = Math.floor(W * 0.50);
+  const col3X = Math.floor(W * 0.82);
+  const colHeaderY = 60;
+
+  // ── Column headers ─────────────────────────────────────────
+  ctx.font = 'bold 14px monospace';
+  drawTextWithOutline(ctx, 'DODGE', col1X, colHeaderY, '#ff6060', 2);
+  drawTextWithOutline(ctx, 'SHOOT', col2X, colHeaderY, '#60c0ff', 2);
+  drawTextWithOutline(ctx, 'BERRIES', col3X, colHeaderY, '#80e080', 2);
+
+  // Divider lines between columns
+  ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+  ctx.lineWidth = 1;
+  const lineTop = 48;
+  const lineBot = H - 55;
+  ctx.beginPath();
+  ctx.moveTo(Math.floor(W * 0.34), lineTop);
+  ctx.lineTo(Math.floor(W * 0.34), lineBot);
+  ctx.moveTo(Math.floor(W * 0.66), lineTop);
+  ctx.lineTo(Math.floor(W * 0.66), lineBot);
+  ctx.stroke();
+
+  // ── Column 1: Obstacle grid ────────────────────────────────
+  const gridStartY = 85;
+  const cellSize   = 38;
+  const cols       = 4;
+  const gridW      = cols * cellSize;
+  const gridLeft   = col1X - gridW / 2 + cellSize / 2;
+
+  for (let i = 0; i < _DODGE_SPRITES.length; i++) {
+    const col = i % cols;
+    const row = Math.floor(i / cols);
+    const sx  = gridLeft + col * cellSize;
+    const sy  = gridStartY + row * cellSize;
+    const s   = _DODGE_SPRITES[i].sprite;
+    drawSprite(ctx, s.data, s.palette, sx, sy, 2);
+  }
+
+  ctx.font = '12px monospace';
+  ctx.fillStyle = '#ffffff';
+  ctx.globalAlpha = 0.85;
+  ctx.fillText('Dodge obstacles — +1 point each', col1X, lineBot - 14);
+  ctx.globalAlpha = 1;
+
+  // ── Column 2: Player shoots enemy ─────────────────────────
+  const shootMidY = Math.floor((colHeaderY + lineBot) / 2) - 10;
+
+  // Player starter (charmander idle as default)
+  const starterSprites = STARTER_SPRITES['charmander']?.[0];
+  if (starterSprites) {
+    drawSprite(ctx, starterSprites.idle, starterSprites.palette, col2X - 48, shootMidY, SPRITE_SCALE);
+  }
+
+  // Arrow (projectile) going right
+  ctx.strokeStyle = '#EF9F27';
+  ctx.lineWidth = 2;
+  ctx.globalAlpha = 0.85;
+  drawArrow(ctx, col2X - 20, shootMidY, col2X + 20, shootMidY);
+  ctx.globalAlpha = 1;
+
+  // Enemy (geodude)
+  const enemySprite = WILD_SPRITES.geodude;
+  drawSprite(ctx, enemySprite.data, enemySprite.palette, col2X + 50, shootMidY, SPRITE_SCALE);
+
+  ctx.font = '12px monospace';
+  ctx.fillStyle = '#ffffff';
+  ctx.globalAlpha = 0.85;
+  ctx.fillText('Shoot enemies — +2 points each', col2X, lineBot - 14);
+  ctx.globalAlpha = 1;
+
+  // ── Column 3: Berries ──────────────────────────────────────
+  const berryStartY = 85;
+  const berryRowH   = 52;
+
+  for (let i = 0; i < _BERRY_DEFS.length; i++) {
+    const def = _BERRY_DEFS[i];
+    const by  = berryStartY + i * berryRowH + 14;
+    const s   = BERRY_SPRITES[def.key];
+    drawSprite(ctx, s.data, s.palette, col3X - 28, by, 3);
+
+    ctx.textAlign = 'left';
+    ctx.font = 'bold 12px monospace';
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(def.effect, col3X - 10, by);
+  }
+
+  ctx.textAlign = 'center';
+  ctx.font = '12px monospace';
+  ctx.fillStyle = '#ffffff';
+  ctx.globalAlpha = 0.85;
+  ctx.fillText('Collect berries', col3X, lineBot - 14);
+  ctx.globalAlpha = 1;
+
+  // ── Scoring disclaimer ─────────────────────────────────────
+  ctx.font = 'italic 11px monospace';
+  ctx.fillStyle = 'rgba(255,255,255,0.38)';
+  ctx.fillText('(scoring subject to change)', W / 2, lineBot + 4);
+
+  // ── Blinking PRESS ENTER prompt ────────────────────────────
+  if (Math.floor(ts / 500) % 2 === 0) {
+    ctx.font = 'bold 15px monospace';
+    drawTextWithOutline(ctx, 'PRESS ENTER TO CONTINUE', W / 2, H - 22, '#ffffff', 2);
+  }
+
+  ctx.restore();
+
+  _drawSkipButton(ctx);
+}
+
+// ============================================================
+// 5b. INSTRUCTIONS SCREEN (legacy — replaced by onboarding)
 // ============================================================
 
 export function drawInstructionsScreen(ctx, ts, dt) {
@@ -544,6 +725,10 @@ export function handleNameKeydown(e) {
 
 export function resetName() {
   playerName = '';
+}
+
+export function setPlayerName(name) {
+  playerName = name;
 }
 
 export function drawEnterNameScreen(ctx, ts, dt) {
