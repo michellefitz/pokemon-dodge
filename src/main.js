@@ -17,7 +17,7 @@ import { touchShoot, hasFiredSinceReset, resetProjectiles, updateProjectiles, dr
 import { drawStarfield } from './renderer.js';
 import { hasCompletedOnboarding, markOnboardingDone, getSavedPlayerName, savePlayerName } from './storage.js';
 import { initAudio, toggleMute, isMuted } from './audio.js';
-import { initMobileControls, getDpadState, isMobileFireActive, showMobileControls, hideMobileControls } from './mobileControls.js';
+import { initMobileControls, getJoystickVector, isMobileFireActive, showMobileControls, hideMobileControls } from './mobileControls.js';
 
 inject();
 
@@ -365,16 +365,19 @@ function loop(ts) {
       break;
     case 'playing': {
       if (isMobile) {
-        // D-pad drives player position directly
-        const dpad = getDpadState();
-        const speed = 6 * (dt / 16);
+        // Analog joystick drives player position
+        const joy = getJoystickVector();
+        const speed = 8 * (dt / 16);
         const r = 22;
-        if (dpad.left)  { player.smoothX = Math.max(r, player.smoothX - speed); tracking.x = player.smoothX; }
-        if (dpad.right) { player.smoothX = Math.min(W - r, player.smoothX + speed); tracking.x = player.smoothX; }
-        if (dpad.up)    { player.smoothY = Math.max(r, player.smoothY - speed); tracking.y = player.smoothY; }
-        if (dpad.down)  { player.smoothY = Math.min(H - r, player.smoothY + speed); tracking.y = player.smoothY; }
+        const dead = 0.12;
+        if (Math.abs(joy.x) > dead || Math.abs(joy.y) > dead) {
+          player.smoothX = Math.max(r, Math.min(W - r, player.smoothX + joy.x * speed));
+          player.smoothY = Math.max(r, Math.min(H - r, player.smoothY + joy.y * speed));
+          tracking.x = player.smoothX;
+          tracking.y = player.smoothY;
+        }
 
-        // Fire buttons shoot straight up
+        // Fire button shoots straight up
         if (isMobileFireActive()) {
           touchShoot(player.smoothX, 0);
         }

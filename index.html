@@ -14,19 +14,24 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      min-height: 100vh;
+      min-height: 100dvh;
       font-family: system-ui, sans-serif;
       overflow: hidden;
     }
-    #app { position: relative; max-width: 100vw; width: fit-content; }
+    /* Canvas is 800×500 (16:10). Constrain so it never overflows viewport
+       in either axis — works in landscape AND portrait on mobile. */
+    #app {
+      position: relative;
+      width: min(800px, 100vw, calc(100dvh * 800 / 500));
+    }
     #gameCanvas {
       width: 100%;
+      display: block;
       border-radius: 12px;
       border: 1px solid rgba(255,255,255,0.1);
-      display: block;
       image-rendering: pixelated;
       image-rendering: crisp-edges;
-      touch-action: none; /* prevent scroll/zoom on canvas */
+      touch-action: none;
     }
     #videoEl { display: none; }
     #statusDot {
@@ -47,107 +52,78 @@
     #dot.active { background: #1D9E75; }
     #statusLabel { font-size: 12px; color: rgba(255,255,255,0.6); }
 
-    /* ── Mobile gamepad overlay ──────────────────────────────── */
+    /* ── Mobile virtual joystick overlay ──────────────────────── */
     #mobile-controls {
       position: absolute;
       inset: 0;
       pointer-events: none;
       display: none;
-    }
-    #mobile-controls.visible { display: block; }
-
-    /* D-pad */
-    #mc-dpad {
-      position: absolute;
-      bottom: 18px;
-      left: 18px;
-      pointer-events: all;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 2px;
-    }
-    .mc-dpad-row {
-      display: flex;
-      gap: 2px;
-    }
-    .mc-dpad-btn {
-      width: 54px;
-      height: 54px;
-      background: rgba(8, 8, 24, 0.80);
-      border: 2px solid rgba(255, 255, 255, 0.30);
-      color: rgba(255, 255, 255, 0.85);
-      font-size: 20px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
+      touch-action: none;
+      -webkit-tap-highlight-color: transparent;
       user-select: none;
       -webkit-user-select: none;
-      -webkit-tap-highlight-color: transparent;
+    }
+    #mobile-controls.visible { display: flex; }
+
+    /* Left half — joystick zone */
+    #mc-left-zone {
+      flex: 1;
+      pointer-events: all;
+      display: flex;
+      align-items: flex-end;
+      padding: 0 0 9% 7%;
       touch-action: none;
-      outline: none;
-      border-radius: 6px;
-      font-family: monospace;
-    }
-    .mc-dpad-btn.pressed {
-      background: rgba(239, 159, 39, 0.30);
-      border-color: rgba(239, 159, 39, 0.75);
-    }
-    .mc-dpad-center {
-      width: 54px;
-      height: 54px;
-      background: rgba(8, 8, 24, 0.60);
-      border: 2px solid rgba(255, 255, 255, 0.10);
-      border-radius: 4px;
     }
 
-    /* Fire buttons */
-    #mc-fire {
-      position: absolute;
-      bottom: 18px;
-      right: 18px;
+    /* Right half — fire zone */
+    #mc-right-zone {
+      flex: 1;
       pointer-events: all;
-      width: 140px;
-      height: 140px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: flex-end;
+      padding: 0 7% 9% 0;
+      touch-action: none;
     }
-    .mc-fire-btn {
-      position: absolute;
-      width: 62px;
-      height: 62px;
+
+    /* Joystick base — 28% of its zone width (= 14% of canvas) */
+    #mc-base {
+      width: 28%;
+      aspect-ratio: 1;
       border-radius: 50%;
-      border: 3px solid rgba(255, 255, 255, 0.45);
-      font-size: 20px;
-      font-weight: bold;
-      font-family: 'Courier New', monospace;
-      cursor: pointer;
-      user-select: none;
-      -webkit-user-select: none;
-      -webkit-tap-highlight-color: transparent;
-      touch-action: none;
-      outline: none;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 4px 0 rgba(0, 0, 0, 0.55);
-      transition: filter 0.05s, transform 0.05s;
+      background: rgba(0, 0, 0, 0.42);
+      border: 2px solid rgba(255, 255, 255, 0.18);
+      position: relative;
+      flex-shrink: 0;
     }
-    .mc-fire-btn.pressed {
-      filter: brightness(1.5);
-      transform: translateY(2px);
-      box-shadow: 0 2px 0 rgba(0, 0, 0, 0.55);
+
+    /* Joystick thumb */
+    #mc-thumb {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 42%;
+      aspect-ratio: 1;
+      border-radius: 50%;
+      background: rgba(210, 210, 225, 0.75);
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      will-change: transform;
     }
-    #mc-btn-b {
-      background: rgba(160, 130, 0, 0.85);
-      color: #fff;
-      top: 0;
-      left: 0;
+
+    /* Fire button */
+    #mc-fire {
+      width: 28%;
+      aspect-ratio: 1;
+      border-radius: 50%;
+      background: rgba(239, 159, 39, 0.42);
+      border: 2px solid rgba(239, 159, 39, 0.35);
+      flex-shrink: 0;
+      transition: background 0.05s, border-color 0.05s;
     }
-    #mc-btn-a {
-      background: rgba(175, 30, 30, 0.85);
-      color: #fff;
-      bottom: 0;
-      right: 0;
+    #mc-fire.pressed {
+      background: rgba(239, 159, 39, 0.82);
+      border-color: rgba(255, 210, 80, 0.8);
     }
   </style>
 </head>
