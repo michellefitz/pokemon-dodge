@@ -286,7 +286,7 @@ export function drawHUD(ctx, score, lives, waveName, effectTimer, effectMaxTime)
   const heartW = HEART_SPRITE.data[0].length * heartScale;
   const heartH = HEART_SPRITE.data.length * heartScale;
   const heartPad = 4;
-  const heartsStartX = W - 12 - (heartW + heartPad) * lives + heartPad;
+  const heartsStartX = W - 50 - (heartW + heartPad) * lives + heartPad; // offset left to clear mute button
   const heartsY = 12 + heartH / 2;
 
   for (let i = 0; i < lives; i++) {
