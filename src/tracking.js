@@ -137,6 +137,60 @@ export function stopTracking() {
   updateStatus(false, 'camera off');
 }
 
+// ── Nod detection ──────────────────────────────────────────────────────────
+// Two-phase state machine: 'watching' → head dips below baseline → 'dipped'
+// → head returns above baseline → fires nod event, resets to 'watching'.
+// Baseline adapts slowly toward the current Y so it self-calibrates.
+
+const NOD_DIP_PX = 20;    // Y must drop this many px below baseline to count as dip
+const NOD_RETURN_PX = 15; // Y must rise this many px above dip point to confirm nod
+const BASELINE_ALPHA = 0.02; // slow adaptation rate
+
+let _nodState = 'watching'; // 'watching' | 'dipped'
+let _nodBaseline = null;    // null until first call
+let _nodDipY = 0;           // Y value at deepest dip
+
+/**
+ * Call once per frame with the current head Y pixel value.
+ * Returns true on the frame a nod is confirmed, false otherwise.
+ * Y increases downward (canvas coordinates).
+ */
+export function detectNod(y) {
+  if (_nodBaseline === null) {
+    _nodBaseline = y;
+  }
+
+  let fired = false;
+
+  if (_nodState === 'watching') {
+    if (y > _nodBaseline + NOD_DIP_PX) {
+      _nodState = 'dipped';
+      _nodDipY = y;
+    } else {
+      // Slowly adapt baseline toward current Y
+      _nodBaseline += (_nodBaseline - _nodBaseline) || 0;
+      _nodBaseline = _nodBaseline * (1 - BASELINE_ALPHA) + y * BASELINE_ALPHA;
+    }
+  } else if (_nodState === 'dipped') {
+    if (y > _nodDipY) _nodDipY = y; // track lowest point
+    if (y < _nodDipY - NOD_RETURN_PX) {
+      // Head has risen back up — nod confirmed
+      fired = true;
+      _nodState = 'watching';
+      _nodBaseline = y;
+    }
+  }
+
+  return fired;
+}
+
+/** Reset nod detector state (call when entering onboarding2). */
+export function resetNodDetector() {
+  _nodState = 'watching';
+  _nodBaseline = null;
+  _nodDipY = 0;
+}
+
 function enableMouseFallback(canvas) {
   tracking.active = true;
   tracking.mode = 'mouse';
