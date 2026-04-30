@@ -408,9 +408,12 @@ export function drawOnboarding1(ctx, ts, dt) {
   ctx.lineTo(Math.floor(W * 0.66), lineBot);
   ctx.stroke();
 
+  // Shared vertical centre for all three columns
+  const contentMidY = Math.floor((colHeaderY + lineBot) / 2);
+
   // ── Column 1: Obstacle grid ────────────────────────────────
-  const gridStartY = 85;
   const cellSize   = 38;
+  const gridStartY = contentMidY - 19; // centres 2-row block around contentMidY
   const cols       = 4;
   const gridW      = cols * cellSize;
   const gridLeft   = col1X - gridW / 2 + cellSize / 2;
@@ -431,7 +434,7 @@ export function drawOnboarding1(ctx, ts, dt) {
   ctx.globalAlpha = 1;
 
   // ── Column 2: Player shoots enemy ─────────────────────────
-  const shootMidY = Math.floor((colHeaderY + lineBot) / 2) - 10;
+  const shootMidY = contentMidY;
 
   // Player starter (charmander idle as default)
   const starterSprites = STARTER_SPRITES['charmander']?.[0];
@@ -457,8 +460,8 @@ export function drawOnboarding1(ctx, ts, dt) {
   ctx.globalAlpha = 1;
 
   // ── Column 3: Berries ──────────────────────────────────────
-  const berryStartY = 85;
   const berryRowH   = 52;
+  const berryStartY = contentMidY - 92; // centres 4-item block around contentMidY
 
   for (let i = 0; i < _BERRY_DEFS.length; i++) {
     const def = _BERRY_DEFS[i];
