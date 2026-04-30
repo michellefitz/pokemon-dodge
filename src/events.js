@@ -28,9 +28,11 @@ export function resetEvents() {
   nextEventCooldown = EVENT_COOLDOWN;
 }
 
-/** Returns true while the Team Rocket event is active (controls reversed). */
+/** Returns true once 1500ms have elapsed since Team Rocket appeared (grace period for player to read the banner). */
 export function isControlsReversed() {
-  return activeEvent !== null && activeEvent.type === 'rocket';
+  if (!activeEvent || activeEvent.type !== 'rocket') return false;
+  const elapsed = activeEvent.maxTime - activeEvent.timer;
+  return elapsed >= 1500;
 }
 
 // ============================================================
@@ -122,7 +124,7 @@ export function updateEvent(dt) {
 
     case 'legendary': {
       // Move Mewtwo rightward across the screen
-      activeEvent.x += 1.5 * dtFactor;
+      activeEvent.x += 1.0 * dtFactor;
 
       // Collision check with player
       if (!activeEvent.collected) {
@@ -247,6 +249,19 @@ function _drawSnorlax(ctx, _ts) {
 // ── Team Rocket ─────────────────────────────────────────────
 
 function _drawRocket(ctx, ts) {
+  // Persistent "CONTROLS REVERSED" label below the R badge
+  ctx.save();
+  ctx.font = 'bold 12px monospace';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = 'rgba(0,0,0,0.85)';
+  ctx.strokeText('CONTROLS REVERSED', 16, 76);
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = '#ff6666';
+  ctx.fillText('CONTROLS REVERSED', 16, 76);
+  ctx.restore();
+
   // Flashing red "R" in the top-left corner, blinking every 200 ms
   const visible = Math.floor(ts / 200) % 2 === 0;
   if (!visible) return;

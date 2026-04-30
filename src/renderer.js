@@ -107,6 +107,49 @@ export function spawnSparkles(x, y, count = 12) {
   }
 }
 
+// ── Floating labels (berry pickup callouts) ──────────────────
+
+/** @type {Array<{x, y, text, color, life}>} */
+const _floatingLabels = [];
+
+/**
+ * Spawn a floating text label that rises and fades out.
+ * @param {number} x
+ * @param {number} y
+ * @param {string} text
+ * @param {string} [color='#ffffff']
+ */
+export function spawnFloatingLabel(x, y, text, color = '#ffffff') {
+  _floatingLabels.push({ x, y, text, color, life: 1 });
+}
+
+/**
+ * Update and draw all floating labels.
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {number} dt
+ */
+export function updateAndDrawFloatingLabels(ctx, dt) {
+  const norm = dt * 0.06;
+  for (let i = _floatingLabels.length - 1; i >= 0; i--) {
+    const lbl = _floatingLabels[i];
+    lbl.y -= 0.9 * norm;
+    lbl.life -= 0.022 * norm;
+    if (lbl.life <= 0) { _floatingLabels.splice(i, 1); continue; }
+
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, lbl.life);
+    ctx.font = 'bold 12px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = 'rgba(0,0,0,0.85)';
+    ctx.strokeText(lbl.text, lbl.x, lbl.y);
+    ctx.fillStyle = lbl.color;
+    ctx.fillText(lbl.text, lbl.x, lbl.y);
+    ctx.restore();
+  }
+}
+
 /**
  * Update all particles, remove dead ones, and draw survivors.
  * @param {CanvasRenderingContext2D} ctx
@@ -266,6 +309,17 @@ export function drawHUD(ctx, score, lives, waveName, effectTimer, effectMaxTime)
     const barX = W / 2 - barW / 2;
     const barY = H - 20;
     const fill = Math.max(0, Math.min(1, effectTimer / effectMaxTime));
+
+    // "INVINCIBLE" label above bar
+    ctx.globalAlpha = 1;
+    ctx.font = 'bold 11px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = 'rgba(0,0,0,0.8)';
+    ctx.strokeText('INVINCIBLE', W / 2, barY - 3);
+    ctx.fillStyle = COLORS.scoreYellow;
+    ctx.fillText('INVINCIBLE', W / 2, barY - 3);
 
     // Dark background
     ctx.globalAlpha = 0.7;

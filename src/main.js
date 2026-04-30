@@ -4,6 +4,7 @@ import { initTracking, stopTracking, tracking } from './tracking.js';
 import { initHands } from './hands.js';
 import { selectStarter, resetPlayer, getStarterNames, player } from './player.js';
 import { resetGame, updateGame, drawGame, getScore } from './game.js';
+import { isControlsReversed } from './events.js';
 import {
   drawTitleScreen, drawSelectScreen, getSelectIndex, moveSelect,
   drawGameOverScreen, startGameOver,
@@ -15,7 +16,7 @@ import {
 import { submitScore, fetchLeaderboard } from './leaderboard.js';
 import { touchShoot, hasFiredSinceReset, resetProjectiles, updateProjectiles, drawProjectiles } from './projectiles.js';
 import { drawStarfield } from './renderer.js';
-import { hasCompletedOnboarding, markOnboardingDone, getSavedPlayerName, savePlayerName } from './storage.js';
+import { hasCompletedOnboarding, markOnboardingDone, getSavedPlayerName, savePlayerName, saveBestScore } from './storage.js';
 import { initAudio, toggleMute, isMuted } from './audio.js';
 import { initMobileControls, getJoystickVector, getRightJoystickVector, showMobileControls, hideMobileControls } from './mobileControls.js';
 
@@ -44,6 +45,7 @@ let state = 'title';
 let lastTs = 0;
 let lastScore = 0;
 let cameraStatusText = 'Loading camera...';
+let lastRightFireTime = 0;
 
 // Camera lifecycle — true while tracking is running
 let cameraInitialized = false;
@@ -172,7 +174,9 @@ document.addEventListener('keydown', (e) => {
   initAudio();
 
   if (e.key === 'm' || e.key === 'M') {
-    toggleMute();
+    const nowMuted = toggleMute();
+    muteBtn.textContent = nowMuted ? '🔇' : '🔊';
+    muteBtn.classList.toggle('muted', nowMuted);
     return;
   }
 
@@ -291,23 +295,37 @@ canvas.addEventListener('touchend', (e) => {
   }
 });
 
-// ── Mobile name entry ───────────────────────────────────────
+// ── Mobile name entry (styled modal) ───────────────────────
+let _nameModalActive = false;
+
 function mobileNameEntry() {
-  const name = prompt('Enter your name for the leaderboard (max 12 characters):');
-  if (name && name.trim()) {
-    const clean = name.trim().replace(/[^a-zA-Z0-9 ]/g, '').slice(0, 12);
-    for (const ch of clean) {
-      handleNameKeydown({ key: ch });
-    }
-    if (clean.length > 0) {
-      handleNameKeydown({ key: 'Enter' });
-      savePlayerName(getPlayerName());
-      state = 'select';
-      return;
-    }
+  if (_nameModalActive) return;
+  _nameModalActive = true;
+
+  const modal = document.getElementById('name-modal');
+  const input = document.getElementById('name-modal-input');
+  const btn   = document.getElementById('name-modal-btn');
+
+  input.value = '';
+  modal.classList.add('visible');
+  setTimeout(() => input.focus(), 80);
+
+  function submit() {
+    const clean = input.value.trim().replace(/[^a-zA-Z0-9 ]/g, '').slice(0, 12);
+    modal.classList.remove('visible');
+    _nameModalActive = false;
+    btn.onclick = null;
+    input.onkeydown = null;
+
+    const finalName = clean.length > 0 ? clean : 'TRAINER';
+    for (const ch of finalName) handleNameKeydown({ key: ch });
+    handleNameKeydown({ key: 'Enter' });
+    savePlayerName(getPlayerName());
+    state = 'select';
   }
-  // Cancelled or no valid name — back to title
-  state = 'title';
+
+  btn.onclick = submit;
+  input.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); submit(); } };
 }
 
 // ── Cross-platform nudge (shown on game over) ───────────────
@@ -321,7 +339,7 @@ function drawCrossPlatformNudge(ctx, ts) {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = `rgba(255,255,255,${0.38 + Math.sin(ts * 0.0018) * 0.12})`;
-  ctx.fillText(msg, W / 2, H - 28);
+  ctx.fillText(msg, W / 2, H - 18);
   ctx.restore();
 }
 
@@ -409,23 +427,27 @@ function loop(ts) {
       break;
     case 'playing': {
       if (isMobile) {
-        // Analog joystick drives player position
+        // Analog joystick drives player position (reversed during Team Rocket event)
         const joy = getJoystickVector();
+        const reversed = isControlsReversed();
+        const jx = reversed ? -joy.x : joy.x;
+        const jy = reversed ? -joy.y : joy.y;
         const speed = 8 * (dt / 16);
         const r = 22;
         const dead = 0.12;
-        if (Math.abs(joy.x) > dead || Math.abs(joy.y) > dead) {
-          player.smoothX = Math.max(r, Math.min(W - r, player.smoothX + joy.x * speed));
-          player.smoothY = Math.max(r, Math.min(H - r, player.smoothY + joy.y * speed));
+        if (Math.abs(jx) > dead || Math.abs(jy) > dead) {
+          player.smoothX = Math.max(r, Math.min(W - r, player.smoothX + jx * speed));
+          player.smoothY = Math.max(r, Math.min(H - r, player.smoothY + jy * speed));
           tracking.x = player.smoothX;
           tracking.y = player.smoothY;
         }
 
-        // Right joystick fires in the direction it's pushed
+        // Right joystick fires in the direction it's pushed (throttled to 150ms)
         const rJoy = getRightJoystickVector();
         const fireDead = 0.2;
-        if (Math.abs(rJoy.x) > fireDead || Math.abs(rJoy.y) > fireDead) {
+        if ((Math.abs(rJoy.x) > fireDead || Math.abs(rJoy.y) > fireDead) && ts - lastRightFireTime > 150) {
           touchShoot(player.smoothX + rJoy.x * 500, player.smoothY + rJoy.y * 500);
+          lastRightFireTime = ts;
         }
       } else {
         // Desktop: touch-drag shooting
@@ -437,8 +459,9 @@ function loop(ts) {
       const result = updateGame(ts, dt);
       drawGame(ctx, ts, dt);
       if (result === 'gameover') {
-        startGameOver(getScore());
         lastScore = getScore();
+        saveBestScore(lastScore);
+        startGameOver(lastScore);
         state = 'gameover';
       }
       break;
@@ -446,10 +469,10 @@ function loop(ts) {
     case 'gameover':
       drawGame(ctx, ts, 0);
       drawGameOverScreen(ctx, ts, dt, getScore());
-      drawCrossPlatformNudge(ctx, ts);
       break;
     case 'leaderboard':
       drawLeaderboardScreen(ctx, ts, dt, lastScore, getPlayerName());
+      drawCrossPlatformNudge(ctx, ts);
       break;
   }
 

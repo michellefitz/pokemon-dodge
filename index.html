@@ -52,31 +52,18 @@
     #dot.active { background: #1D9E75; }
     #statusLabel { font-size: 12px; color: rgba(255,255,255,0.6); }
 
-    /* ── Mobile: side-column joystick layout ───────────────────
-       body becomes a flex row: [left zone] [canvas] [right zone]
-       Zones are always in layout (visibility toggle) for stable canvas sizing. */
+    /* ── Mobile: overlay joystick layout ───────────────────────
+       Joystick zones are absolutely positioned over the canvas
+       at the bottom corners during gameplay. */
 
-    body.mobile-mode {
-      flex-direction: row;
-      height: 100dvh;
-      min-height: unset;
-      align-items: center;
-      justify-content: center;
-    }
-
-    /* Canvas on mobile — constrained by viewport height and space left after zones */
-    body.mobile-mode #app {
-      width: min(800px, calc(100dvh * 800 / 500), calc(100vw - 180px));
-      flex-shrink: 1;
-    }
-
-    /* Side zones — always 90px wide in layout; invisible outside gameplay */
+    /* Joystick overlay zones — hidden on desktop, absolute on mobile */
     #mc-left-zone,
     #mc-right-zone {
-      display: none;            /* hidden on desktop */
-      width: 90px;
-      flex-shrink: 0;
-      height: 100dvh;
+      display: none;
+      position: absolute;
+      bottom: 16px;
+      width: 88px;
+      height: 88px;
       visibility: hidden;
       pointer-events: none;
       touch-action: none;
@@ -85,7 +72,10 @@
       -webkit-tap-highlight-color: transparent;
       user-select: none;
       -webkit-user-select: none;
+      z-index: 10;
     }
+    #mc-left-zone  { left: 12px; }
+    #mc-right-zone { right: 12px; }
     body.mobile-mode #mc-left-zone,
     body.mobile-mode #mc-right-zone {
       display: flex;
@@ -95,6 +85,73 @@
       visibility: visible;
       pointer-events: all;
     }
+
+    /* ── Name entry modal (mobile) ──────────────────────────── */
+    #name-modal {
+      display: none;
+      position: absolute;
+      inset: 0;
+      background: rgba(8, 8, 18, 0.88);
+      align-items: center;
+      justify-content: center;
+      z-index: 40;
+      border-radius: 12px;
+    }
+    #name-modal.visible { display: flex; }
+    #name-modal-box {
+      background: #12122a;
+      border: 2px solid rgba(239, 159, 39, 0.55);
+      border-radius: 10px;
+      padding: 26px 28px 22px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      width: min(300px, 78%);
+      box-shadow: 0 0 40px rgba(239, 159, 39, 0.12);
+    }
+    #name-modal-title {
+      font: bold 18px monospace;
+      color: #f5d020;
+      letter-spacing: 3px;
+    }
+    #name-modal-sub {
+      font: 11px monospace;
+      color: rgba(255, 255, 255, 0.45);
+      text-align: center;
+    }
+    #name-modal-input {
+      background: rgba(0, 0, 0, 0.55);
+      border: 1px solid rgba(239, 159, 39, 0.4);
+      border-radius: 6px;
+      color: #fff;
+      font: bold 20px monospace;
+      padding: 10px 14px;
+      width: 100%;
+      text-align: center;
+      letter-spacing: 3px;
+      outline: none;
+      text-transform: uppercase;
+      margin-top: 4px;
+    }
+    #name-modal-input::placeholder { color: rgba(255, 255, 255, 0.2); letter-spacing: 1px; }
+    #name-modal-input:focus { border-color: rgba(239, 159, 39, 0.85); }
+    #name-modal-btn {
+      background: rgba(239, 159, 39, 0.88);
+      border: 2px solid rgba(255, 210, 80, 0.55);
+      color: #111;
+      font: bold 15px monospace;
+      padding: 10px 0;
+      border-radius: 6px;
+      cursor: pointer;
+      letter-spacing: 2px;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+      width: 100%;
+      margin-top: 4px;
+      box-shadow: 0 3px 0 rgba(0, 0, 0, 0.4);
+    }
+    #name-modal-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(0,0,0,0.4); }
 
     /* Joystick bases */
     #mc-left-base,
@@ -130,10 +187,10 @@
     #mc-left-thumb  { background: rgba(210, 210, 225, 0.80); }
     #mc-right-thumb { background: rgba(239, 159, 39, 0.90); }
 
-    /* ── Mute button (top-right, always visible) ─────────────── */
+    /* ── Mute button (bottom-right, always visible) ──────────── */
     #mute-btn {
       position: absolute;
-      top: 8px;
+      bottom: 8px;
       right: 8px;
       background: rgba(0, 0, 0, 0.55);
       border: 1px solid rgba(255, 255, 255, 0.20);
@@ -143,7 +200,7 @@
       height: 28px;
       border-radius: 6px;
       cursor: pointer;
-      z-index: 20;
+      z-index: 30;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -189,6 +246,14 @@
     <div id="statusDot"><div id="dot"></div><span id="statusLabel">camera off</span></div>
     <button id="mute-btn" aria-label="Toggle sound (M)">🔊</button>
     <button id="start-btn" aria-label="Start game">START</button>
+    <div id="name-modal">
+      <div id="name-modal-box">
+        <div id="name-modal-title">YOUR NAME</div>
+        <div id="name-modal-sub">shown on the leaderboard<br>max 12 characters</div>
+        <input id="name-modal-input" type="text" maxlength="12" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" placeholder="TRAINER">
+        <button id="name-modal-btn">CONFIRM</button>
+      </div>
+    </div>
   </div>
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3/camera_utils.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4/face_mesh.js"></script>

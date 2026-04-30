@@ -10,7 +10,7 @@ const LEADERBOARD_KEY = 'pokemon-dodge:leaderboard';
 const MAX_ENTRIES = 50;
 const MAX_SCORE = 500; // no legit game exceeds this
 const RATE_LIMIT_SECONDS = 30;
-const SCORE_SECRET = process.env.SCORE_SECRET || 'pokemon-dodge-default-secret';
+const SCORE_SECRET = process.env.SCORE_SECRET;
 
 // Verify the HMAC token the client sends with each score submission
 function verifyToken(name, score, token) {
@@ -35,6 +35,10 @@ function getClientIP(req) {
 }
 
 export default async function handler(req, res) {
+  if (!SCORE_SECRET) {
+    return res.status(500).json({ error: 'Server misconfigured' });
+  }
+
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -47,10 +51,8 @@ export default async function handler(req, res) {
     if (req.method === 'GET') {
       const scores = await redis.zrange(LEADERBOARD_KEY, 0, MAX_ENTRIES - 1, { rev: true, withScores: true });
 
-      const leaderboard = [];
-      for (let i = 0; i < scores.length; i += 2) {
-        leaderboard.push({ name: scores[i], score: scores[i + 1] });
-      }
+      // Upstash SDK returns [{member, score}, ...] when withScores: true
+      const leaderboard = scores.map(entry => ({ name: entry.member, score: entry.score }));
 
       return res.status(200).json(leaderboard);
     }

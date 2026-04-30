@@ -3,7 +3,7 @@ import { player, updatePlayer, drawPlayer, shouldEvolve, evolve, finishEvolving,
 import { getObstacles, clearObstacles, spawnObstacle, updateObstacles, checkCollisions, drawObstacles, setOnDodgedCallback } from './obstacles.js';
 import { clearBerries, spawnBerry, updateBerries, checkBerryCollisions, drawBerries, getActiveEffect } from './powerups.js';
 import { resetEvents, trySpawnEvent, updateEvent, isControlsReversed, drawEvent, getActiveEvent, getSnorlaxBlockRect } from './events.js';
-import { drawStarfield, updateAndDrawParticles, drawHUD, applyScreenEffects, triggerShake, triggerFlash, spawnParticles, drawTrackingFeedback } from './renderer.js';
+import { drawStarfield, updateAndDrawParticles, updateAndDrawFloatingLabels, drawHUD, applyScreenEffects, triggerShake, triggerFlash, spawnParticles, drawTrackingFeedback } from './renderer.js';
 import { tracking } from './tracking.js';
 import { handState } from './hands.js';
 import { startEvolutionCutscene, updateEvolutionCutscene, drawEvolutionCutscene } from './screens.js';
@@ -131,8 +131,10 @@ export function updateGame(ts, dt) {
   // ── Player ──────────────────────────────────────────────
   updatePlayer(dt, reversed, getSnorlaxBlockRect());
 
-  // ── Spawn ────────────────────────────────────────────────
-  if (ts - lastSpawnTime >= wave.spawnInterval) {
+  // ── Spawn (interval ramps down within each wave) ─────────
+  const scoreInWave = score - wave.minScore;
+  const effectiveInterval = Math.max(300, wave.spawnInterval - scoreInWave * 3);
+  if (ts - lastSpawnTime >= effectiveInterval) {
     lastSpawnTime = ts;
     if (Math.random() < wave.berryChance) {
       spawnBerry();
@@ -213,8 +215,9 @@ export function drawGame(ctx, ts, dt) {
 
   ctx.restore();
 
-  // ── Particles (not shaken) ───────────────────────────────
+  // ── Particles & floating labels (not shaken) ─────────────
   updateAndDrawParticles(ctx, dt);
+  updateAndDrawFloatingLabels(ctx, dt);
 
   // ── HUD ──────────────────────────────────────────────────
   const wave = getCurrentWave();

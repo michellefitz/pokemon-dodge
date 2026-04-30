@@ -25,9 +25,9 @@ export const WAVES = [
     name: 'Wave 1',
     minScore: 0,
     maxScore: 15,
-    spawnInterval: 1200,
+    spawnInterval: 900,
     obstacles: { pokeball: 1 },
-    berryChance: 0,
+    berryChance: 0.1,
   },
   {
     name: 'Wave 2',
@@ -106,7 +106,7 @@ export const EVENT_MAX_COOLDOWN = 45000;
 export const SNORLAX_DURATION = 6000;
 export const TEAM_ROCKET_DURATION = 5000;
 export const FOG_DURATION = 6000;
-export const LEGENDARY_POINTS = 50;
+export const LEGENDARY_POINTS = 100;
 
 // Sprite scale
 export const SPRITE_SCALE = 3;

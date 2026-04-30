@@ -2,7 +2,7 @@ import { W, H, BERRY_SPEED, BERRY_RADIUS, INVINCIBILITY_DURATION, SPRITE_SCALE }
 import { drawSprite, BERRY_SPRITES } from './sprites.js';
 import { player, getHitboxRadius, getStarterDef } from './player.js';
 import { clearObstacles } from './obstacles.js';
-import { spawnParticles, spawnSparkles, triggerFlash } from './renderer.js';
+import { spawnParticles, spawnSparkles, triggerFlash, spawnFloatingLabel } from './renderer.js';
 
 // ============================================================
 // Module state
@@ -126,11 +126,13 @@ export function checkBerryCollisions(score) {
       case 'oran':
         scoreBonus += 10;
         spawnParticles(b.x, b.y, '#6090ff', 8);
+        spawnFloatingLabel(b.x, b.y - 16, '+10 ORAN', '#6090ff');
         break;
 
       case 'sitrus':
         player.lives++;
         spawnParticles(b.x, b.y, '#f5d020', 8);
+        spawnFloatingLabel(b.x, b.y - 16, '+1 LIFE', '#f5d020');
         break;
 
       case 'rawst':
@@ -138,12 +140,14 @@ export function checkBerryCollisions(score) {
         player.invincibleTimer = INVINCIBILITY_DURATION;
         activeEffect = { type: 'rawst', timer: INVINCIBILITY_DURATION, maxTime: INVINCIBILITY_DURATION };
         spawnParticles(b.x, b.y, '#e04030', 8);
+        spawnFloatingLabel(b.x, b.y - 16, 'INVINCIBLE!', '#e04030');
         break;
 
       case 'lum':
         clearObstacles();
         triggerFlash('#40e060', 0.5);
         spawnParticles(b.x, b.y, '#40e060', 12);
+        spawnFloatingLabel(b.x, b.y - 16, 'SCREEN CLEAR!', '#40e060');
         break;
     }
 

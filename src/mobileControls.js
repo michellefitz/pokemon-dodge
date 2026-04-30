@@ -37,10 +37,10 @@ export function initMobileControls() {
   _rightZoneEl.id = 'mc-right-zone';
   _rightZoneEl.innerHTML = '<div id="mc-right-base"><div id="mc-right-thumb"></div></div>';
 
-  // Insert left before #app, right after #app — both siblings in body flex row
+  // Insert both zones inside #app so they overlay the canvas
   const app = document.getElementById('app');
-  document.body.insertBefore(_leftZoneEl, app);
-  app.insertAdjacentElement('afterend', _rightZoneEl);
+  app.appendChild(_leftZoneEl);
+  app.appendChild(_rightZoneEl);
 
   _leftBaseEl   = document.getElementById('mc-left-base');
   _leftThumbEl  = document.getElementById('mc-left-thumb');

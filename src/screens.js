@@ -1,4 +1,5 @@
 import { W, H, COLORS, SPRITE_SCALE } from './constants.js';
+import { getBestScore } from './storage.js';
 import {
   drawSprite,
   STARTER_SPRITES,
@@ -335,12 +336,27 @@ export function drawGameOverScreen(ctx, ts, dt, finalScore) {
 
   // Score tally
   ctx.font = 'bold 28px monospace';
-  drawTextWithOutline(ctx, `SCORE: ${displayedScore}`, W / 2, H / 2 + 10, COLORS.scoreYellow, 3);
+  drawTextWithOutline(ctx, `SCORE: ${displayedScore}`, W / 2, H / 2, COLORS.scoreYellow, 3);
+
+  // Personal best
+  if (tallyDone) {
+    const best = getBestScore();
+    const isNewBest = finalScore >= best && finalScore > 0;
+    ctx.font = '14px monospace';
+    if (isNewBest) {
+      ctx.globalAlpha = 0.8 + Math.sin(gameOverTimer * 0.005) * 0.2;
+      drawTextWithOutline(ctx, 'NEW BEST!', W / 2, H / 2 + 36, COLORS.scoreYellow, 2);
+      ctx.globalAlpha = 1;
+    } else {
+      ctx.fillStyle = 'rgba(255,255,255,0.45)';
+      ctx.fillText(`best: ${best}`, W / 2, H / 2 + 36);
+    }
+  }
 
   // After tally, show leaderboard prompt
   if (tallyDone && Math.floor(gameOverTimer / 500) % 2 === 0) {
     ctx.font = 'bold 16px monospace';
-    drawTextWithOutline(ctx, 'PRESS ENTER FOR LEADERBOARD', W / 2, H / 2 + 65, '#ffffff', 2);
+    drawTextWithOutline(ctx, 'PRESS ENTER FOR LEADERBOARD', W / 2, H / 2 + 70, '#ffffff', 2);
   }
 
   ctx.restore();
@@ -472,11 +488,6 @@ export function drawOnboarding1(ctx, ts, dt) {
   ctx.fillText('Shoot enemies (2 points each)', col2X, captionY);
   ctx.fillText('Collect berries', col3X, captionY);
   ctx.globalAlpha = 1;
-
-  // ── Scoring disclaimer ─────────────────────────────────────
-  ctx.font = 'italic 11px monospace';
-  ctx.fillStyle = 'rgba(255,255,255,0.38)';
-  ctx.fillText('(scoring subject to change)', W / 2, captionY + 18);
 
   // ── Blinking PRESS ENTER prompt ────────────────────────────
   if (Math.floor(ts / 500) % 2 === 0) {
@@ -980,12 +991,12 @@ export function drawLeaderboardScreen(ctx, ts, dt, playerScore, playerNameStr) {
   ctx.textAlign = 'center';
   ctx.font = '16px monospace';
   ctx.fillStyle = 'rgba(255,255,255,0.6)';
-  ctx.fillText(`Your score: ${playerScore}`, W / 2, H - 70);
+  ctx.fillText(`Your score: ${playerScore}`, W / 2, H - 90);
 
   // Play again prompt
   if (Math.floor(ts / 500) % 2 === 0) {
     ctx.font = 'bold 16px monospace';
-    drawTextWithOutline(ctx, 'PRESS ENTER TO PLAY AGAIN', W / 2, H - 35, '#fff', 2);
+    drawTextWithOutline(ctx, 'PRESS ENTER TO PLAY AGAIN', W / 2, H - 58, '#fff', 2);
   }
 
   ctx.restore();
