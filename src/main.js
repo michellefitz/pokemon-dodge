@@ -1,19 +1,21 @@
 import { inject } from '@vercel/analytics';
 import { W, H, COLORS } from './constants.js';
-import { initTracking, stopTracking } from './tracking.js';
-import { initHands } from './hands.js';
+import { initTracking, stopTracking, detectNod, resetNodDetector, tracking } from './tracking.js';
+import { initHands, detectTwoHandWave, resetWaveDetector } from './hands.js';
 import { selectStarter, resetPlayer, getStarterNames, player } from './player.js';
 import { resetGame, updateGame, drawGame, getScore } from './game.js';
 import {
   drawTitleScreen, drawSelectScreen, getSelectIndex, moveSelect,
   drawGameOverScreen, startGameOver,
-  drawInstructionsScreen,
+  drawOnboarding1, drawOnboarding2, initOnboarding2, isSkipButtonHit, setPlayerName,
+  HOW_TO_PLAY_BUTTON, isHowToPlayHit,
   drawEnterNameScreen, handleNameKeydown, getPlayerName, resetName,
   drawLeaderboardScreen, resetLeaderboardScroll,
 } from './screens.js';
 import { submitScore, fetchLeaderboard } from './leaderboard.js';
-import { touchShoot } from './projectiles.js';
+import { touchShoot, hasFiredSinceReset, resetProjectiles, updateProjectiles, drawProjectiles } from './projectiles.js';
 import { drawStarfield } from './renderer.js';
+import { hasCompletedOnboarding, markOnboardingDone, getSavedPlayerName, savePlayerName } from './storage.js';
 
 inject();
 
@@ -22,14 +24,27 @@ canvas.width = W;
 canvas.height = H;
 const ctx = canvas.getContext('2d');
 
-// States: title → instructions → enterName → select → waitingForCamera → playing → gameover → leaderboard
+// States: title → onboarding1 → onboarding2 → enterName → select → waitingForCamera → playing → gameover → leaderboard
+// Returning players: title → select → waitingForCamera → playing
 let state = 'title';
 let lastTs = 0;
 let lastScore = 0;
 let cameraStatusText = 'Loading camera...';
 
+// Camera lifecycle — true while tracking is running
+let cameraInitialized = false;
+
+// Onboarding 2 state
+let ob2Part = 1;    // 1 = head control, 2 = hand control
+let ob2HasFired = false;
+
 // Detect mobile
 const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || 'ontouchstart' in window;
+
+// Pre-fill name for returning players
+if (hasCompletedOnboarding()) {
+  setPlayerName(getSavedPlayerName());
+}
 
 function canvasCoords(e) {
   const rect = canvas.getBoundingClientRect();
@@ -41,11 +56,45 @@ function canvasCoords(e) {
   };
 }
 
+// Enter onboarding 2 — init camera + reset all detectors
+function enterOnboarding2() {
+  const starters = getStarterNames();
+  const randomStarter = starters[Math.floor(Math.random() * starters.length)];
+  selectStarter(randomStarter);
+  resetProjectiles();
+  resetNodDetector();
+  resetWaveDetector();
+  initOnboarding2();
+  ob2Part = 1;
+  ob2HasFired = false;
+
+  if (!cameraInitialized) {
+    initHands();
+    initTracking(canvas).then(() => {
+      cameraInitialized = true;
+    });
+  }
+
+  state = 'onboarding2';
+}
+
+// Complete onboarding — mark done and move to name entry
+function advanceFromOnboarding2() {
+  markOnboardingDone();
+  state = 'enterName';
+}
+
 // Start camera, wait for face detection, then begin playing
 function startPlaying() {
   const chosen = getStarterNames()[getSelectIndex()];
   selectStarter(chosen);
   resetGame();
+
+  // Camera already running (initialized during onboarding) — go straight to playing
+  if (cameraInitialized) {
+    state = 'playing';
+    return;
+  }
 
   state = 'waitingForCamera';
   cameraStatusText = 'Loading camera...';
@@ -58,6 +107,7 @@ function startPlaying() {
     // Small delay so user sees "face detected" before game starts
     setTimeout(() => {
       if (state === 'waitingForCamera') {
+        cameraInitialized = true;
         state = 'playing';
       }
     }, 500);
@@ -68,6 +118,7 @@ function goToLeaderboard() {
   lastScore = getScore();
   // Stop camera when game ends
   stopTracking();
+  cameraInitialized = false;
   state = 'leaderboard';
   submitScore(getPlayerName(), lastScore).then(() => {
     return fetchLeaderboard();
@@ -80,14 +131,28 @@ function goToLeaderboard() {
 document.addEventListener('keydown', (e) => {
   switch (state) {
     case 'title':
-      if (e.key === 'Enter' || e.key === ' ') state = 'instructions';
+      if (e.key === 'Enter' || e.key === ' ') {
+        if (hasCompletedOnboarding()) {
+          state = 'select';
+        } else {
+          state = 'onboarding1';
+        }
+      }
       break;
-    case 'instructions':
-      if (e.key === 'Enter' || e.key === ' ') state = 'enterName';
+    case 'onboarding1':
+      if (e.key === 'Enter' || e.key === ' ') enterOnboarding2();
+      else if (e.key === 'Escape') state = 'title';
+      break;
+    case 'onboarding2':
+      if (e.key === 'Enter' || e.key === ' ') advanceFromOnboarding2();
+      else if (e.key === 'Escape') state = 'title';
       break;
     case 'enterName': {
       const result = handleNameKeydown(e);
-      if (result === 'done') state = 'select';
+      if (result === 'done') {
+        savePlayerName(getPlayerName());
+        state = 'select';
+      }
       break;
     }
     case 'select':
@@ -114,10 +179,19 @@ canvas.addEventListener('click', (e) => {
   const pos = canvasCoords(e);
   switch (state) {
     case 'title':
-      state = 'instructions';
+      if (hasCompletedOnboarding() && isHowToPlayHit(pos)) {
+        state = 'onboarding1';
+      } else if (hasCompletedOnboarding()) {
+        state = 'select';
+      } else {
+        state = 'onboarding1';
+      }
       break;
-    case 'instructions':
-      state = 'enterName';
+    case 'onboarding1':
+      if (isSkipButtonHit(pos)) enterOnboarding2();
+      break;
+    case 'onboarding2':
+      if (isSkipButtonHit(pos)) advanceFromOnboarding2();
       break;
     case 'select': {
       const third = W / 3;
@@ -176,6 +250,7 @@ function mobileNameEntry() {
     }
     if (clean.length > 0) {
       handleNameKeydown({ key: 'Enter' });
+      savePlayerName(getPlayerName());
       state = 'select';
     }
   }
@@ -220,13 +295,42 @@ function loop(ts) {
   const dt = lastTs ? Math.min(ts - lastTs, 50) : 16;
   lastTs = ts;
 
+  const isReturning = hasCompletedOnboarding();
+
   switch (state) {
     case 'title':
-      drawTitleScreen(ctx, ts, dt);
+      drawTitleScreen(ctx, ts, dt, isReturning);
       break;
-    case 'instructions':
-      drawInstructionsScreen(ctx, ts, dt);
+    case 'onboarding1':
+      drawOnboarding1(ctx, ts, dt);
       break;
+    case 'onboarding2': {
+      // Keep player position synced with head tracking so projectiles originate correctly
+      player.smoothX = tracking.x;
+      player.smoothY = tracking.y;
+
+      // Part 1 → 2: nod to advance
+      if (ob2Part === 1 && detectNod(tracking.y)) {
+        ob2Part = 2;
+        resetProjectiles(); // fresh energy for shooting practice
+      }
+
+      // Part 2: run projectile physics, detect fire + wave to finish
+      if (ob2Part === 2) {
+        updateProjectiles(ts, dt);
+        if (hasFiredSinceReset()) ob2HasFired = true;
+        if (ob2HasFired && detectTwoHandWave(ts)) {
+          advanceFromOnboarding2();
+        }
+      }
+
+      drawOnboarding2(ctx, ts, dt, ob2Part, ob2HasFired);
+
+      if (ob2Part === 2) {
+        drawProjectiles(ctx, ts);
+      }
+      break;
+    }
     case 'enterName':
       if (isMobile && getPlayerName().length === 0) {
         mobileNameEntry();

@@ -33,7 +33,15 @@ function drawTextWithOutline(ctx, text, x, y, fillColor, outlineWidth = 3) {
 
 let titleBlink = 0;
 
-export function drawTitleScreen(ctx, ts, dt) {
+// Hit area for the "How to Play" link shown to returning players
+export const HOW_TO_PLAY_BUTTON = { x: W / 2 - 55, y: H - 44, w: 110, h: 20 };
+
+export function isHowToPlayHit(pos) {
+  return pos.x >= HOW_TO_PLAY_BUTTON.x && pos.x <= HOW_TO_PLAY_BUTTON.x + HOW_TO_PLAY_BUTTON.w
+      && pos.y >= HOW_TO_PLAY_BUTTON.y && pos.y <= HOW_TO_PLAY_BUTTON.y + HOW_TO_PLAY_BUTTON.h;
+}
+
+export function drawTitleScreen(ctx, ts, dt, isReturning = false) {
   // Background
   ctx.fillStyle = COLORS.bg;
   ctx.fillRect(0, 0, W, H);
@@ -84,6 +92,14 @@ export function drawTitleScreen(ctx, ts, dt) {
   ctx.font = '13px monospace';
   ctx.textBaseline = 'bottom';
   ctx.fillText('move your head to dodge  •  uses webcam', W / 2, H - 14);
+
+  // "How to Play" link for returning players
+  if (isReturning) {
+    ctx.globalAlpha = 0.55;
+    ctx.fillStyle = '#aaddff';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('How to Play', W / 2, HOW_TO_PLAY_BUTTON.y + HOW_TO_PLAY_BUTTON.h / 2);
+  }
 
   ctx.restore();
 }
