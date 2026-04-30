@@ -427,12 +427,6 @@ export function drawOnboarding1(ctx, ts, dt) {
     drawSprite(ctx, s.data, s.palette, sx, sy, 2);
   }
 
-  ctx.font = '12px monospace';
-  ctx.fillStyle = '#ffffff';
-  ctx.globalAlpha = 0.85;
-  ctx.fillText('Dodge obstacles — +1 point each', col1X, lineBot - 14);
-  ctx.globalAlpha = 1;
-
   // ── Column 2: Player shoots enemy ─────────────────────────
   const shootMidY = contentMidY;
 
@@ -453,12 +447,6 @@ export function drawOnboarding1(ctx, ts, dt) {
   const enemySprite = WILD_SPRITES.geodude;
   drawSprite(ctx, enemySprite.data, enemySprite.palette, col2X + 50, shootMidY, SPRITE_SCALE);
 
-  ctx.font = '12px monospace';
-  ctx.fillStyle = '#ffffff';
-  ctx.globalAlpha = 0.85;
-  ctx.fillText('Shoot enemies — +2 points each', col2X, lineBot - 14);
-  ctx.globalAlpha = 1;
-
   // ── Column 3: Berries ──────────────────────────────────────
   const berryRowH   = 52;
   const berryStartY = contentMidY - 92; // centres 4-item block around contentMidY
@@ -475,17 +463,21 @@ export function drawOnboarding1(ctx, ts, dt) {
     ctx.fillText(def.effect, col3X - 10, by);
   }
 
+  // ── Column captions — just below the content ──────────────
+  const captionY = contentMidY + 110;
   ctx.textAlign = 'center';
   ctx.font = '12px monospace';
   ctx.fillStyle = '#ffffff';
   ctx.globalAlpha = 0.85;
-  ctx.fillText('Collect berries', col3X, lineBot - 14);
+  ctx.fillText('Dodge obstacles', col1X, captionY);
+  ctx.fillText('Shoot enemies (2 points each)', col2X, captionY);
+  ctx.fillText('Collect berries', col3X, captionY);
   ctx.globalAlpha = 1;
 
   // ── Scoring disclaimer ─────────────────────────────────────
   ctx.font = 'italic 11px monospace';
   ctx.fillStyle = 'rgba(255,255,255,0.38)';
-  ctx.fillText('(scoring subject to change)', W / 2, lineBot + 4);
+  ctx.fillText('(scoring subject to change)', W / 2, captionY + 18);
 
   // ── Blinking PRESS ENTER prompt ────────────────────────────
   if (Math.floor(ts / 500) % 2 === 0) {
