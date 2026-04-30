@@ -1,11 +1,13 @@
-// Mobile virtual joystick overlay
-// Left zone: analog joystick for movement
-// Right zone: analog joystick for fire direction (amber)
+// Mobile virtual joystick controls
+// Two side columns flanking the canvas: left = move, right = fire direction.
+// Elements are inserted into <body> before/after #app so they never overlay gameplay.
+
+import { initAudio } from './audio.js';
 
 const _leftJoy  = { x: 0, y: 0 };
 const _rightJoy = { x: 0, y: 0 };
 
-let _el = null;
+let _leftZoneEl  = null, _rightZoneEl  = null;
 let _leftBaseEl  = null, _leftThumbEl  = null;
 let _rightBaseEl = null, _rightThumbEl = null;
 let _leftTouchId  = null;
@@ -15,82 +17,111 @@ export function getJoystickVector()      { return _leftJoy; }
 export function getRightJoystickVector() { return _rightJoy; }
 
 export function showMobileControls() {
-  if (_el) _el.classList.add('visible');
+  _leftZoneEl?.classList.add('visible');
+  _rightZoneEl?.classList.add('visible');
 }
 
 export function hideMobileControls() {
-  if (_el) _el.classList.remove('visible');
+  _leftZoneEl?.classList.remove('visible');
+  _rightZoneEl?.classList.remove('visible');
 }
 
 export function initMobileControls() {
-  if (_el) return;
+  if (_leftZoneEl) return;
 
-  _el = document.createElement('div');
-  _el.id = 'mobile-controls';
-  _el.innerHTML = `
-    <div id="mc-left-zone">
-      <div id="mc-left-base"><div id="mc-left-thumb"></div></div>
-    </div>
-    <div id="mc-right-zone">
-      <div id="mc-right-base"><div id="mc-right-thumb"></div></div>
-    </div>
-  `;
-  // Append to body (after #app) so controls sit below the canvas in the layout
-  document.body.appendChild(_el);
+  _leftZoneEl = document.createElement('div');
+  _leftZoneEl.id = 'mc-left-zone';
+  _leftZoneEl.innerHTML = '<div id="mc-left-base"><div id="mc-left-thumb"></div></div>';
+
+  _rightZoneEl = document.createElement('div');
+  _rightZoneEl.id = 'mc-right-zone';
+  _rightZoneEl.innerHTML = '<div id="mc-right-base"><div id="mc-right-thumb"></div></div>';
+
+  // Insert left before #app, right after #app — both siblings in body flex row
+  const app = document.getElementById('app');
+  document.body.insertBefore(_leftZoneEl, app);
+  app.insertAdjacentElement('afterend', _rightZoneEl);
 
   _leftBaseEl   = document.getElementById('mc-left-base');
   _leftThumbEl  = document.getElementById('mc-left-thumb');
   _rightBaseEl  = document.getElementById('mc-right-base');
   _rightThumbEl = document.getElementById('mc-right-thumb');
 
-  _el.addEventListener('touchstart',  _onStart,  { passive: false });
-  _el.addEventListener('touchmove',   _onMove,   { passive: false });
-  _el.addEventListener('touchend',    _onEnd,    { passive: false });
-  _el.addEventListener('touchcancel', _onEnd,    { passive: false });
+  // Left zone touch handlers
+  _leftZoneEl.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    initAudio(); // resume audio context if iOS suspended it
+    for (const t of e.changedTouches) {
+      if (_leftTouchId === null) {
+        _leftTouchId = t.identifier;
+        _moveThumb(t, _leftBaseEl, _leftThumbEl, _leftJoy);
+      }
+    }
+  }, { passive: false });
+
+  _leftZoneEl.addEventListener('touchmove', (e) => {
+    e.preventDefault();
+    for (const t of e.changedTouches) {
+      if (t.identifier === _leftTouchId) {
+        _moveThumb(t, _leftBaseEl, _leftThumbEl, _leftJoy);
+      }
+    }
+  }, { passive: false });
+
+  _leftZoneEl.addEventListener('touchend',    _makeLeftEnd(), { passive: false });
+  _leftZoneEl.addEventListener('touchcancel', _makeLeftEnd(), { passive: false });
+
+  // Right zone touch handlers
+  _rightZoneEl.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    initAudio();
+    for (const t of e.changedTouches) {
+      if (_rightTouchId === null) {
+        _rightTouchId = t.identifier;
+        _moveThumb(t, _rightBaseEl, _rightThumbEl, _rightJoy);
+      }
+    }
+  }, { passive: false });
+
+  _rightZoneEl.addEventListener('touchmove', (e) => {
+    e.preventDefault();
+    for (const t of e.changedTouches) {
+      if (t.identifier === _rightTouchId) {
+        _moveThumb(t, _rightBaseEl, _rightThumbEl, _rightJoy);
+      }
+    }
+  }, { passive: false });
+
+  _rightZoneEl.addEventListener('touchend',    _makeRightEnd(), { passive: false });
+  _rightZoneEl.addEventListener('touchcancel', _makeRightEnd(), { passive: false });
 }
 
-function _onStart(e) {
-  e.preventDefault();
-  const overlayRect = _el.getBoundingClientRect();
-  const midX = overlayRect.left + overlayRect.width / 2;
-
-  for (const t of e.changedTouches) {
-    if (t.clientX < midX && _leftTouchId === null) {
-      _leftTouchId = t.identifier;
-      _moveThumb(t, _leftBaseEl, _leftThumbEl, _leftJoy);
-    } else if (t.clientX >= midX && _rightTouchId === null) {
-      _rightTouchId = t.identifier;
-      _moveThumb(t, _rightBaseEl, _rightThumbEl, _rightJoy);
+function _makeLeftEnd() {
+  return function(e) {
+    e.preventDefault();
+    for (const t of e.changedTouches) {
+      if (t.identifier === _leftTouchId) {
+        _leftTouchId = null;
+        _leftJoy.x = 0;
+        _leftJoy.y = 0;
+        if (_leftThumbEl) _leftThumbEl.style.transform = 'translate(-50%, -50%)';
+      }
     }
-  }
+  };
 }
 
-function _onMove(e) {
-  e.preventDefault();
-  for (const t of e.changedTouches) {
-    if (t.identifier === _leftTouchId) {
-      _moveThumb(t, _leftBaseEl, _leftThumbEl, _leftJoy);
-    } else if (t.identifier === _rightTouchId) {
-      _moveThumb(t, _rightBaseEl, _rightThumbEl, _rightJoy);
+function _makeRightEnd() {
+  return function(e) {
+    e.preventDefault();
+    for (const t of e.changedTouches) {
+      if (t.identifier === _rightTouchId) {
+        _rightTouchId = null;
+        _rightJoy.x = 0;
+        _rightJoy.y = 0;
+        if (_rightThumbEl) _rightThumbEl.style.transform = 'translate(-50%, -50%)';
+      }
     }
-  }
-}
-
-function _onEnd(e) {
-  e.preventDefault();
-  for (const t of e.changedTouches) {
-    if (t.identifier === _leftTouchId) {
-      _leftTouchId = null;
-      _leftJoy.x = 0;
-      _leftJoy.y = 0;
-      _leftThumbEl.style.transform = 'translate(-50%, -50%)';
-    } else if (t.identifier === _rightTouchId) {
-      _rightTouchId = null;
-      _rightJoy.x = 0;
-      _rightJoy.y = 0;
-      _rightThumbEl.style.transform = 'translate(-50%, -50%)';
-    }
-  }
+  };
 }
 
 function _moveThumb(touch, baseEl, thumbEl, joy) {

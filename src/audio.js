@@ -7,18 +7,25 @@ let musicEl = null;
 let muted = false;
 
 export function initAudio() {
-  if (ctx) return; // already initialised
+  if (!ctx) {
+    ctx = new (window.AudioContext || window.webkitAudioContext)();
 
-  ctx = new (window.AudioContext || window.webkitAudioContext)();
+    musicEl = new Audio('/audio/background.mp3');
+    musicEl.loop = true;
+    musicEl.volume = 0.45;
 
-  musicEl = new Audio('/audio/background.mp3');
-  musicEl.loop = true;
-  musicEl.volume = 0.45;
+    const source = ctx.createMediaElementSource(musicEl);
+    source.connect(ctx.destination);
 
-  const source = ctx.createMediaElementSource(musicEl);
-  source.connect(ctx.destination);
+    musicEl.play().catch(() => {});
+  }
 
-  musicEl.play().catch(() => {}); // browser may still block; user gesture should cover it
+  // iOS suspends AudioContext after native dialogs (e.g. prompt()) — always resume
+  if (ctx.state === 'suspended') {
+    ctx.resume().then(() => {
+      if (musicEl && musicEl.paused && !muted) musicEl.play().catch(() => {});
+    });
+  }
 }
 
 export function isMuted() {

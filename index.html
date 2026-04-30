@@ -52,48 +52,55 @@
     #dot.active { background: #1D9E75; }
     #statusLabel { font-size: 12px; color: rgba(255,255,255,0.6); }
 
-    /* ── Mobile joystick strip (below canvas, not overlaid) ──── */
+    /* ── Mobile: side-column joystick layout ───────────────────
+       body becomes a flex row: [left zone] [canvas] [right zone]
+       Zones are always in layout (visibility toggle) for stable canvas sizing. */
 
-    /* Canvas on mobile: leave 110px for controls strip below */
-    body.mobile-mode #app {
-      width: min(100vw, calc((100dvh - 110px) * 800 / 500));
+    body.mobile-mode {
+      flex-direction: row;
+      height: 100dvh;
+      min-height: unset;
+      align-items: center;
+      justify-content: center;
     }
 
-    /* Controls strip — in document flow, always occupies 110px so canvas
-       sizing is stable (visibility toggled, not display) */
-    #mobile-controls {
-      width: 100vw;
-      height: 110px;
-      display: none;            /* desktop: hidden entirely */
+    /* Canvas on mobile — constrained by viewport height and space left after zones */
+    body.mobile-mode #app {
+      width: min(800px, calc(100dvh * 800 / 500), calc(100vw - 180px));
+      flex-shrink: 1;
+    }
+
+    /* Side zones — always 90px wide in layout; invisible outside gameplay */
+    #mc-left-zone,
+    #mc-right-zone {
+      display: none;            /* hidden on desktop */
+      width: 90px;
+      flex-shrink: 0;
+      height: 100dvh;
+      visibility: hidden;
+      pointer-events: none;
       touch-action: none;
+      align-items: center;
+      justify-content: center;
       -webkit-tap-highlight-color: transparent;
       user-select: none;
       -webkit-user-select: none;
     }
-    body.mobile-mode #mobile-controls {
-      display: flex;            /* in flow, always reserves space */
-      visibility: hidden;       /* invisible outside gameplay */
-    }
-    body.mobile-mode #mobile-controls.visible {
-      visibility: visible;
-    }
-
-    /* Joystick zones — fill each half of the strip */
-    #mc-left-zone,
-    #mc-right-zone {
-      flex: 1;
-      pointer-events: all;
+    body.mobile-mode #mc-left-zone,
+    body.mobile-mode #mc-right-zone {
       display: flex;
-      align-items: center;
-      justify-content: center;
-      touch-action: none;
+    }
+    body.mobile-mode #mc-left-zone.visible,
+    body.mobile-mode #mc-right-zone.visible {
+      visibility: visible;
+      pointer-events: all;
     }
 
-    /* Joystick bases — fixed size that fits comfortably in 110px strip */
+    /* Joystick bases */
     #mc-left-base,
     #mc-right-base {
-      width: 84px;
-      height: 84px;
+      width: 72px;
+      height: 72px;
       border-radius: 50%;
       position: relative;
       flex-shrink: 0;
