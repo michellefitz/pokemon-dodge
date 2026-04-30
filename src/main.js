@@ -26,6 +26,18 @@ canvas.width = W;
 canvas.height = H;
 const ctx = canvas.getContext('2d');
 
+// ── Mute button (top-right of canvas, always shown) ─────────
+const muteBtn = document.getElementById('mute-btn');
+muteBtn.addEventListener('click', () => {
+  initAudio();
+  const nowMuted = toggleMute();
+  muteBtn.textContent = nowMuted ? '🔇' : '🔊';
+  muteBtn.classList.toggle('muted', nowMuted);
+});
+
+// ── Mobile Start button (select screen only) ─────────────────
+const startBtn = document.getElementById('start-btn');
+
 // States: title → onboarding1 → onboarding2 → enterName → select → waitingForCamera → playing → gameover → leaderboard
 // Mobile flow: title → enterName → select → playing (no camera, no onboarding)
 let state = 'title';
@@ -53,6 +65,12 @@ if (isMobile) {
   if (statusDot) statusDot.style.display = 'none';
   const videoEl = document.getElementById('videoEl');
   if (videoEl) videoEl.remove();
+
+  // Start button — fires startPlaying() from the select screen
+  startBtn.addEventListener('click', () => {
+    initAudio();
+    if (state === 'select') startPlaying();
+  });
 }
 
 // Pre-fill name for returning players
@@ -348,6 +366,8 @@ function loop(ts) {
   if (isMobile) {
     if (state === 'playing') showMobileControls();
     else hideMobileControls();
+    // Start button only visible on select screen
+    startBtn.style.display = (state === 'select') ? 'block' : 'none';
   }
 
   const isReturning = hasCompletedOnboarding();
@@ -431,17 +451,6 @@ function loop(ts) {
     case 'leaderboard':
       drawLeaderboardScreen(ctx, ts, dt, lastScore, getPlayerName());
       break;
-  }
-
-  // Mute indicator
-  if (isMuted()) {
-    ctx.save();
-    ctx.font = '13px monospace';
-    ctx.fillStyle = 'rgba(255,255,255,0.4)';
-    ctx.textAlign = 'right';
-    ctx.textBaseline = 'top';
-    ctx.fillText('🔇 M', W - 10, 10);
-    ctx.restore();
   }
 
   requestAnimationFrame(loop);

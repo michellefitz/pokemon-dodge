@@ -201,11 +201,10 @@ export function drawSelectScreen(ctx, ts, dt) {
   ctx.fillStyle = '#ffffff';
   ctx.textBaseline = 'bottom';
   const isMobile = 'ontouchstart' in window;
-  if (isMobile) {
-    ctx.fillText('Tap left / right to choose  \u2022  Tap center to confirm', W / 2, H - 16);
-  } else {
+  if (!isMobile) {
     ctx.fillText('\u2190 \u2192 to choose  \u2022  ENTER to confirm', W / 2, H - 16);
   }
+  // Mobile: instruction omitted — Start button provides the affordance
 
   ctx.restore();
 }

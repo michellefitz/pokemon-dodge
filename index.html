@@ -129,6 +129,57 @@
     }
     #mc-left-thumb  { background: rgba(210, 210, 225, 0.80); }
     #mc-right-thumb { background: rgba(239, 159, 39, 0.90); }
+
+    /* ── Mute button (top-right, always visible) ─────────────── */
+    #mute-btn {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: rgba(0, 0, 0, 0.55);
+      border: 1px solid rgba(255, 255, 255, 0.20);
+      color: rgba(255, 255, 255, 0.90);
+      font-size: 14px;
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      cursor: pointer;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      line-height: 1;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+    #mute-btn:hover { background: rgba(255, 255, 255, 0.12); }
+    #mute-btn.muted { opacity: 0.55; }
+
+    /* ── Mobile Start button (select screen) ─────────────────── */
+    #start-btn {
+      position: absolute;
+      bottom: 18px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(239, 159, 39, 0.88);
+      border: 2px solid rgba(255, 210, 80, 0.6);
+      color: #111;
+      font: bold 16px monospace;
+      padding: 10px 36px;
+      border-radius: 8px;
+      cursor: pointer;
+      z-index: 20;
+      display: none;
+      letter-spacing: 2px;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+      box-shadow: 0 4px 0 rgba(0, 0, 0, 0.45);
+      white-space: nowrap;
+    }
+    #start-btn:active {
+      transform: translateX(-50%) translateY(2px);
+      box-shadow: 0 2px 0 rgba(0, 0, 0, 0.45);
+    }
   </style>
 </head>
 <body>
@@ -136,6 +187,8 @@
     <canvas id="gameCanvas" width="800" height="500"></canvas>
     <video id="videoEl" autoplay playsinline width="640" height="480"></video>
     <div id="statusDot"><div id="dot"></div><span id="statusLabel">camera off</span></div>
+    <button id="mute-btn" aria-label="Toggle sound (M)">🔊</button>
+    <button id="start-btn" aria-label="Start game">START</button>
   </div>
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3/camera_utils.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4/face_mesh.js"></script>
