@@ -5,9 +5,6 @@ import {
   POKEBALL_SPRITES,
   WILD_SPRITES,
   BERRY_SPRITES,
-  EMBER_SPRITE,
-  WATER_SHOT_SPRITE,
-  RAZOR_LEAF_SPRITE,
 } from './sprites.js';
 import { getStarterNames, getStarterDef, player } from './player.js';
 import { drawStarfield } from './renderer.js';
@@ -355,7 +352,7 @@ export function drawGameOverScreen(ctx, ts, dt, finalScore) {
 // ============================================================
 
 
-// All obstacle/attack sprites for the "Dodge" column
+// All obstacle sprites for the "Dodge" column
 const _DODGE_SPRITES = [
   { sprite: POKEBALL_SPRITES.pokeball,   label: 'Pokéball'  },
   { sprite: POKEBALL_SPRITES.greatball,  label: 'Greatball' },
@@ -365,9 +362,6 @@ const _DODGE_SPRITES = [
   { sprite: WILD_SPRITES.geodude,        label: 'Geodude'   },
   { sprite: WILD_SPRITES.gastly,         label: 'Gastly'    },
   { sprite: WILD_SPRITES.pidgey,         label: 'Pidgey'    },
-  { sprite: EMBER_SPRITE,                label: 'Ember'     },
-  { sprite: WATER_SHOT_SPRITE,           label: 'Water Gun' },
-  { sprite: RAZOR_LEAF_SPRITE,           label: 'Vine Whip' },
 ];
 
 const _BERRY_DEFS = [

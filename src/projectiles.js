@@ -167,9 +167,6 @@ export function checkProjectileCollisions() {
     for (let j = obstacles.length - 1; j >= 0; j--) {
       const ob = obstacles[j];
 
-      // Skip attack-type obstacles (watergun, vinewhip) — can't shoot those
-      if (ob.type === 'watergun' || ob.type === 'vinewhip') continue;
-
       // For ember obstacles, check against each fireball
       if (ob.type === 'ember' && ob.embers) {
         for (const e of ob.embers) {

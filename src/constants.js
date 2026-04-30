@@ -52,7 +52,7 @@ export const WAVES = [
     minScore: 61,
     maxScore: 99,
     spawnInterval: 700,
-    obstacles: { greatball: 2, ultraball: 3, zubat: 2, geodude: 2, gastly: 1, pidgey: 1, ember: 1, watergun: 1, vinewhip: 1 },
+    obstacles: { greatball: 2, ultraball: 3, zubat: 2, geodude: 2, gastly: 1, pidgey: 1 },
     berryChance: 0.15,
     eventsEnabled: true,
   },
@@ -61,7 +61,7 @@ export const WAVES = [
     minScore: 100,
     maxScore: Infinity,
     spawnInterval: 500,
-    obstacles: { greatball: 1, ultraball: 3, masterball: 1, zubat: 2, geodude: 2, gastly: 2, pidgey: 2, ember: 2, watergun: 1, vinewhip: 1 },
+    obstacles: { greatball: 1, ultraball: 3, masterball: 1, zubat: 2, geodude: 2, gastly: 2, pidgey: 2 },
     berryChance: 0.15,
     eventsEnabled: true,
   },
@@ -80,9 +80,6 @@ export const OBSTACLE_SPEEDS = {
   geodude: 2.0,
   gastly: 2.5,
   pidgey: 4.0,
-  ember: 3.5,
-  watergun: 3.5,
-  vinewhip: 3.0,
 };
 
 // Obstacle hitbox radii
@@ -95,7 +92,6 @@ export const OBSTACLE_RADII = {
   geodude: 20,
   gastly: 16,
   pidgey: 14,
-  ember: 8,
 };
 
 export const MAX_OBSTACLES = 8;
