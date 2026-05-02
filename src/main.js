@@ -1,4 +1,5 @@
 import { inject } from '@vercel/analytics';
+import { injectSpeedInsights } from '@vercel/speed-insights';
 import { W, H, COLORS } from './constants.js';
 import { initTracking, stopTracking, tracking } from './tracking.js';
 import { initHands } from './hands.js';
@@ -21,6 +22,7 @@ import { initAudio, toggleMute, isMuted } from './audio.js';
 import { initMobileControls, getJoystickVector, getRightJoystickVector, showMobileControls, hideMobileControls } from './mobileControls.js';
 
 inject();
+injectSpeedInsights();
 
 const canvas = document.getElementById('gameCanvas');
 canvas.width = W;
