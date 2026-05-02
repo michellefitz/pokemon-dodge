@@ -371,7 +371,7 @@ export function drawGameOverScreen(ctx, ts, dt, finalScore) {
 const _DODGE_SPRITES = [
   { sprite: POKEBALL_SPRITES.pokeball,   label: 'Pokéball'  },
   { sprite: POKEBALL_SPRITES.greatball,  label: 'Greatball' },
-  { sprite: POKEBALL_SPRITES.ultraball,  label: 'Ultraball' },
+  { sprite: POKEBALL_SPRITES.ultraball,  label: 'Voltorb'   },
   { sprite: POKEBALL_SPRITES.masterball, label: 'Masterball'},
   { sprite: WILD_SPRITES.zubat,          label: 'Zubat'     },
   { sprite: WILD_SPRITES.geodude,        label: 'Geodude'   },
