@@ -403,13 +403,13 @@ export function drawOnboarding1(ctx, ts, dt) {
   const col1X = Math.floor(W * 0.18);
   const col2X = Math.floor(W * 0.50);
   const col3X = Math.floor(W * 0.82);
-  const colHeaderY = 60;
+  const colHeaderY = 88;
 
   // ── Column headers ─────────────────────────────────────────
   ctx.font = 'bold 14px monospace';
-  drawTextWithOutline(ctx, 'DODGE', col1X, colHeaderY, '#ff6060', 2);
-  drawTextWithOutline(ctx, 'SHOOT', col2X, colHeaderY, '#60c0ff', 2);
-  drawTextWithOutline(ctx, 'BERRIES', col3X, colHeaderY, '#80e080', 2);
+  drawTextWithOutline(ctx, 'DODGE',   col1X, colHeaderY, '#ff6060', 2);
+  drawTextWithOutline(ctx, 'SHOOT',   col2X, colHeaderY, '#60c0ff', 2);
+  drawTextWithOutline(ctx, 'COLLECT', col3X, colHeaderY, '#80e080', 2);
 
   // Divider lines between columns
   ctx.strokeStyle = 'rgba(255,255,255,0.12)';
@@ -423,8 +423,8 @@ export function drawOnboarding1(ctx, ts, dt) {
   ctx.lineTo(Math.floor(W * 0.66), lineBot);
   ctx.stroke();
 
-  // Shared vertical centre for all three columns
-  const contentMidY = Math.floor((colHeaderY + lineBot) / 2);
+  // Shared vertical centre for all three columns (decoupled from colHeaderY)
+  const contentMidY = Math.floor((60 + lineBot) / 2);
 
   // ── Column 1: Obstacle grid ────────────────────────────────
   const cellSize   = 38;
