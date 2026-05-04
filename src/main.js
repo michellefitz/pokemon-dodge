@@ -440,9 +440,11 @@ function loop(ts) {
         if (Math.abs(jx) > dead || Math.abs(jy) > dead) {
           player.smoothX = Math.max(r, Math.min(W - r, player.smoothX + jx * speed));
           player.smoothY = Math.max(r, Math.min(H - r, player.smoothY + jy * speed));
-          tracking.x = player.smoothX;
-          tracking.y = player.smoothY;
         }
+        // Neutralise updatePlayer's position-based reversal: set tracking so its
+        // targetX resolves back to player.smoothX regardless of reversed state.
+        tracking.x = reversed ? W - player.smoothX : player.smoothX;
+        tracking.y = reversed ? H - player.smoothY : player.smoothY;
 
         // Right joystick fires in the direction it's pushed (throttled to 150ms)
         const rJoy = getRightJoystickVector();
