@@ -9,7 +9,8 @@ import { isControlsReversed } from './events.js';
 import {
   drawTitleScreen, drawSelectScreen, getSelectIndex, moveSelect,
   drawGameOverScreen, startGameOver,
-  drawOnboarding1, drawOnboarding2, initOnboarding2, setPlayerName,
+  drawOnboarding1, drawOnboarding2, initOnboarding2,
+  drawMobileOnboarding, setPlayerName,
   HOW_TO_PLAY_BUTTON, isHowToPlayHit,
   drawEnterNameScreen, handleNameKeydown, getPlayerName, resetName,
   drawLeaderboardScreen, resetLeaderboardScroll,
@@ -42,7 +43,7 @@ muteBtn.addEventListener('click', () => {
 const startBtn = document.getElementById('start-btn');
 
 // States: title → onboarding1 → onboarding2 → enterName → select → waitingForCamera → playing → gameover → leaderboard
-// Mobile flow: title → enterName → select → playing (no camera, no onboarding)
+// Mobile flow: title → mobileOnboarding (first time) → enterName → select → playing (no camera)
 let state = 'title';
 let lastTs = 0;
 let lastScore = 0;
@@ -63,7 +64,6 @@ const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || 'ontou
 if (isMobile) {
   document.body.classList.add('mobile-mode');
   initMobileControls();
-  markOnboardingDone(); // onboarding teaches camera controls — not relevant on mobile
   // Hide camera status indicator and remove video element so no permission is requested
   const statusDot = document.getElementById('statusDot');
   if (statusDot) statusDot.style.display = 'none';
@@ -185,11 +185,21 @@ document.addEventListener('keydown', (e) => {
   switch (state) {
     case 'title':
       if (e.key === 'Enter' || e.key === ' ') {
-        if (isMobile || hasCompletedOnboarding()) {
-          state = (isMobile && !getSavedPlayerName()) ? 'enterName' : 'select';
+        if (isMobile) {
+          if (!hasCompletedOnboarding()) { state = 'mobileOnboarding'; }
+          else if (!getSavedPlayerName()) { state = 'enterName'; }
+          else { state = 'select'; }
+        } else if (hasCompletedOnboarding()) {
+          state = 'select';
         } else {
           state = 'onboarding1';
         }
+      }
+      break;
+    case 'mobileOnboarding':
+      if (e.key === 'Enter' || e.key === ' ') {
+        markOnboardingDone();
+        state = getSavedPlayerName() ? 'select' : 'enterName';
       }
       break;
     case 'onboarding1':
@@ -241,11 +251,19 @@ canvas.addEventListener('click', (e) => {
     case 'title':
       if (!isMobile && hasCompletedOnboarding() && isHowToPlayHit(pos)) {
         state = 'onboarding1';
-      } else if (isMobile || hasCompletedOnboarding()) {
-        state = (isMobile && !getSavedPlayerName()) ? 'enterName' : 'select';
+      } else if (isMobile) {
+        if (!hasCompletedOnboarding()) { state = 'mobileOnboarding'; }
+        else if (!getSavedPlayerName()) { state = 'enterName'; }
+        else { state = 'select'; }
+      } else if (hasCompletedOnboarding()) {
+        state = 'select';
       } else {
         state = 'onboarding1';
       }
+      break;
+    case 'mobileOnboarding':
+      markOnboardingDone();
+      state = getSavedPlayerName() ? 'select' : 'enterName';
       break;
     case 'onboarding1':
     case 'onboarding2':
@@ -395,6 +413,9 @@ function loop(ts) {
   switch (state) {
     case 'title':
       drawTitleScreen(ctx, ts, dt, isReturning && !isMobile);
+      break;
+    case 'mobileOnboarding':
+      drawMobileOnboarding(ctx, ts, dt);
       break;
     case 'onboarding1':
       drawOnboarding1(ctx, ts, dt);

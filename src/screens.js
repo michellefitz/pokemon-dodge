@@ -499,6 +499,110 @@ export function drawOnboarding1(ctx, ts, dt) {
 }
 
 // ============================================================
+// 5b. MOBILE CONTROLS ONBOARDING
+// ============================================================
+
+export function drawMobileOnboarding(ctx, ts, dt) {
+  ctx.fillStyle = COLORS.bg;
+  ctx.fillRect(0, 0, W, H);
+  drawStarfield(ctx, dt);
+
+  ctx.save();
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  // Title
+  ctx.font = 'bold 22px monospace';
+  drawTextWithOutline(ctx, 'CONTROLS', W / 2, 36, COLORS.scoreYellow, 3);
+
+  const col1X = Math.floor(W * 0.28);
+  const col2X = Math.floor(W * 0.72);
+  const joystickY = Math.floor(H * 0.44);
+  const baseRadius = 52;
+  const thumbRadius = 22;
+
+  // --- Left joystick (MOVE) ---
+  // Animate thumb drifting in a slow circle
+  const angle = (ts / 1600) * Math.PI * 2;
+  const thumbDrift = baseRadius * 0.45;
+  const ltx = col1X + Math.cos(angle) * thumbDrift;
+  const lty = joystickY + Math.sin(angle) * thumbDrift;
+
+  // Base
+  ctx.beginPath();
+  ctx.arc(col1X, joystickY, baseRadius, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.50)';
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.22)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Thumb
+  ctx.beginPath();
+  ctx.arc(ltx, lty, thumbRadius, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(210, 210, 225, 0.80)';
+  ctx.fill();
+
+  // Label above
+  ctx.font = 'bold 18px monospace';
+  drawTextWithOutline(ctx, 'MOVE', col1X, joystickY - baseRadius - 30, '#ffffff', 2);
+
+  // Caption below
+  ctx.font = '13px monospace';
+  ctx.fillStyle = 'rgba(255,255,255,0.65)';
+  ctx.fillText('Move your Pokémon', col1X, joystickY + baseRadius + 22);
+  ctx.fillText('around the screen', col1X, joystickY + baseRadius + 40);
+
+  // --- Right joystick (FIRE) ---
+  // Animate thumb pushing out to show firing
+  const fireAnim = (Math.sin(ts / 500) + 1) / 2; // 0→1 pulse
+  const ftDrift = baseRadius * 0.55 * fireAnim;
+  const ftx = col2X + ftDrift;
+  const fty = joystickY - ftDrift * 0.4;
+
+  // Base
+  ctx.beginPath();
+  ctx.arc(col2X, joystickY, baseRadius, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(120, 75, 0, 0.50)';
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(239, 159, 39, 0.40)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Thumb
+  ctx.beginPath();
+  ctx.arc(ftx, fty, thumbRadius, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(239, 159, 39, 0.90)';
+  ctx.fill();
+
+  // Label above
+  ctx.font = 'bold 18px monospace';
+  drawTextWithOutline(ctx, 'FIRE', col2X, joystickY - baseRadius - 30, '#EF9F27', 2);
+
+  // Caption below
+  ctx.font = '13px monospace';
+  ctx.fillStyle = 'rgba(255,255,255,0.65)';
+  ctx.fillText('Push to fire at enemies', col2X, joystickY + baseRadius + 22);
+  ctx.fillText('in that direction', col2X, joystickY + baseRadius + 40);
+
+  // Divider
+  ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(W / 2, 60);
+  ctx.lineTo(W / 2, H - 55);
+  ctx.stroke();
+
+  // Blinking "TAP TO CONTINUE"
+  if (Math.floor(ts / 500) % 2 === 0) {
+    ctx.font = 'bold 15px monospace';
+    drawTextWithOutline(ctx, 'TAP TO CONTINUE', W / 2, H - 22, '#ffffff', 2);
+  }
+
+  ctx.restore();
+}
+
+// ============================================================
 // 5c. ONBOARDING SCREEN 2 — Controls Practice
 // ============================================================
 
