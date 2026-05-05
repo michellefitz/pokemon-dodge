@@ -1,6 +1,6 @@
 import { W, H } from './constants.js';
 import { drawSprite, EMBER_SPRITE, RAZOR_LEAF_SPRITE, WATER_SHOT_SPRITE } from './sprites.js';
-import { player } from './player.js';
+import { player, getStarterDef } from './player.js';
 import { getObstacles } from './obstacles.js';
 import { spawnParticles } from './renderer.js';
 import { handState } from './hands.js';
@@ -14,7 +14,8 @@ const ENERGY_MAX = 100;
 const ENERGY_COST = 5;
 const ENERGY_RECHARGE = 12; // per second
 const ENERGY_MIN_TO_FIRE = 10;
-const FIRE_INTERVAL = 250; // ms between shots per hand — continuous stream
+const FIRE_INTERVAL_DEFAULT = 250; // ms between shots per hand — continuous stream
+const FIRE_INTERVAL_FAST    = 140; // Charmander perk
 const PROJECTILE_SPEED = 6;
 const PROJECTILE_RADIUS = 6;
 
@@ -93,7 +94,8 @@ function tryFire(hand, side, ts) {
   if (!hand.active) return;
   if (energy[side] < ENERGY_COST) return;
   if (!canFire[side]) return;
-  if (ts - lastFireTime[side] < FIRE_INTERVAL) return;
+  const fireInterval = getStarterDef()?.fastFire ? FIRE_INTERVAL_FAST : FIRE_INTERVAL_DEFAULT;
+  if (ts - lastFireTime[side] < fireInterval) return;
 
   // Direction from player to hand position
   let dx = hand.x - player.smoothX;

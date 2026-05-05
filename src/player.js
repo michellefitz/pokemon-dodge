@@ -6,9 +6,10 @@ const STARTERS = {
   charmander: {
     name: 'Charmander',
     evolutions: ['Charmander', 'Charmeleon', 'Charizard'],
-    speedBonus: 1.05,
+    speedBonus: 1.0,
     livesBonus: 0,
     berryMagnet: false,
+    fastFire: true,
   },
   bulbasaur: {
     name: 'Bulbasaur',

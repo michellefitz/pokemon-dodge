@@ -470,7 +470,8 @@ function loop(ts) {
         // Right joystick fires in the direction it's pushed (throttled to 150ms)
         const rJoy = getRightJoystickVector();
         const fireDead = 0.2;
-        if ((Math.abs(rJoy.x) > fireDead || Math.abs(rJoy.y) > fireDead) && ts - lastRightFireTime > 150) {
+        const mobileFireInterval = player.starter === 'charmander' ? 85 : 150;
+        if ((Math.abs(rJoy.x) > fireDead || Math.abs(rJoy.y) > fireDead) && ts - lastRightFireTime > mobileFireInterval) {
           touchShoot(player.smoothX + rJoy.x * 500, player.smoothY + rJoy.y * 500);
           lastRightFireTime = ts;
         }

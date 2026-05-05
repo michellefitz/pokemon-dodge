@@ -110,7 +110,7 @@ let selectIndex = 1; // start on middle
 let selectBounce = 0;
 
 const STARTER_PERKS = {
-  charmander: '+5% speed',
+  charmander: 'faster fire rate',
   bulbasaur:  '+1 extra life',
   squirtle:   'berry magnet',
 };
