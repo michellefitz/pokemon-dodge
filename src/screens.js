@@ -1095,12 +1095,12 @@ export function drawLeaderboardScreen(ctx, ts, dt, playerScore, playerNameStr) {
   ctx.textAlign = 'center';
   ctx.font = '16px monospace';
   ctx.fillStyle = 'rgba(255,255,255,0.6)';
-  ctx.fillText(`Your score: ${playerScore}`, W / 2, H - 90);
+  ctx.fillText(`Your score: ${playerScore}`, W / 2, H - 52);
 
   // Play again prompt
   if (Math.floor(ts / 500) % 2 === 0) {
     ctx.font = 'bold 16px monospace';
-    drawTextWithOutline(ctx, 'PRESS ENTER TO PLAY AGAIN', W / 2, H - 58, '#fff', 2);
+    drawTextWithOutline(ctx, 'PRESS ENTER TO PLAY AGAIN', W / 2, H - 24, '#fff', 2);
   }
 
   ctx.restore();
