@@ -3,6 +3,7 @@ import { drawSprite, BERRY_SPRITES } from './sprites.js';
 import { player, getHitboxRadius, getStarterDef } from './player.js';
 import { clearObstacles } from './obstacles.js';
 import { spawnParticles, spawnSparkles, triggerFlash, spawnFloatingLabel } from './renderer.js';
+import { playBerrySound } from './audio.js';
 
 // ============================================================
 // Module state
@@ -151,8 +152,9 @@ export function checkBerryCollisions(score) {
         break;
     }
 
-    // Sparkles on every collect
+    // Sparkles + sound on every collect
     spawnSparkles(b.x, b.y, 12);
+    playBerrySound();
 
     berries.splice(i, 1);
   }

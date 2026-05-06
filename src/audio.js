@@ -76,6 +76,27 @@ export function playHitSound() {
   osc.stop(now + 0.24);
 }
 
+// Quick two-note ascending ping — plays when a berry is collected
+export function playBerrySound() {
+  if (!ctx || muted) return;
+  [660, 990].forEach((freq, i) => {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    const t = ctx.currentTime + i * 0.07;
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(freq, t);
+    gain.gain.setValueAtTime(0, t);
+    gain.gain.linearRampToValueAtTime(0.22, t + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.14);
+
+    osc.start(t);
+    osc.stop(t + 0.15);
+  });
+}
+
 // Short high pop — plays when a projectile destroys an enemy
 export function playEnemyHitSound() {
   if (!ctx || muted) return;
