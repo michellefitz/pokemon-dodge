@@ -1,4 +1,6 @@
 // Client-side leaderboard API
+import { getDeviceId } from './storage.js';
+
 const API_URL = '/api/scores';
 
 let cachedScores = [];
@@ -35,7 +37,7 @@ export async function submitScore(name, score) {
     await fetch(API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, score: roundedScore, token }),
+      body: JSON.stringify({ name, score: roundedScore, token, deviceId: getDeviceId() }),
     });
   } catch (e) {
     console.warn('Failed to submit score:', e);

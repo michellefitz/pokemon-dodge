@@ -1,6 +1,16 @@
 const KEY_ONBOARDING = 'onboardingDone';
 const KEY_PLAYER_NAME = 'playerName';
 const KEY_BEST_SCORE = 'bestScore';
+const KEY_DEVICE_ID = 'deviceId';
+
+export function getDeviceId() {
+  let id = localStorage.getItem(KEY_DEVICE_ID);
+  if (!id) {
+    id = crypto.randomUUID();
+    localStorage.setItem(KEY_DEVICE_ID, id);
+  }
+  return id;
+}
 
 export function hasCompletedOnboarding() {
   return localStorage.getItem(KEY_ONBOARDING) === 'true';

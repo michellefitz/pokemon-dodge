@@ -57,7 +57,7 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'POST') {
-      const { name, score, token } = req.body;
+      const { name, score, token, deviceId } = req.body;
 
       // --- Validation ---
       const cleanName = sanitizeName(name);
@@ -87,12 +87,16 @@ export default async function handler(req, res) {
       }
       await redis.set(rateLimitKey, '1', { ex: RATE_LIMIT_SECONDS });
 
-      // --- Store score (one entry per player name, keep personal best) ---
-      const currentBest = await redis.zscore(LEADERBOARD_KEY, cleanName);
+      // --- Store score (one entry per device, keep personal best) ---
+      // Member is name::deviceId so two players with the same display name each
+      // get their own slot. Deduplicate per device, keeping the highest score.
+      const cleanDeviceId = typeof deviceId === 'string' ? deviceId.replace(/[^a-zA-Z0-9-]/g, '').slice(0, 36) : 'unknown';
+      const member = `${cleanName}::${cleanDeviceId}`;
+      const currentBest = await redis.zscore(LEADERBOARD_KEY, member);
       if (currentBest !== null && currentBest >= score) {
         return res.status(200).json({ ok: true }); // existing score is better, skip
       }
-      await redis.zadd(LEADERBOARD_KEY, { score, member: cleanName });
+      await redis.zadd(LEADERBOARD_KEY, { score, member });
 
       const count = await redis.zcard(LEADERBOARD_KEY);
       if (count > MAX_ENTRIES) {
