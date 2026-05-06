@@ -8,7 +8,7 @@ const redis = new Redis({
 
 const LEADERBOARD_KEY = 'pokemon-dodge:leaderboard';
 const MAX_ENTRIES = 50;
-const MAX_SCORE = 500; // no legit game exceeds this
+const MAX_SCORE = 9999; // hard ceiling against injected scores
 const RATE_LIMIT_SECONDS = 30;
 const SCORE_SECRET = process.env.SCORE_SECRET || 'pokemon-dodge-default-secret';
 
