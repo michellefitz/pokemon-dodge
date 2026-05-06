@@ -87,9 +87,12 @@ export default async function handler(req, res) {
       }
       await redis.set(rateLimitKey, '1', { ex: RATE_LIMIT_SECONDS });
 
-      // --- Store score ---
-      const member = `${cleanName}::${Date.now()}`;
-      await redis.zadd(LEADERBOARD_KEY, { score, member });
+      // --- Store score (one entry per player name, keep personal best) ---
+      const currentBest = await redis.zscore(LEADERBOARD_KEY, cleanName);
+      if (currentBest !== null && currentBest >= score) {
+        return res.status(200).json({ ok: true }); // existing score is better, skip
+      }
+      await redis.zadd(LEADERBOARD_KEY, { score, member: cleanName });
 
       const count = await redis.zcard(LEADERBOARD_KEY);
       if (count > MAX_ENTRIES) {

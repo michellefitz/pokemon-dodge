@@ -57,6 +57,44 @@ export function playFireSound() {
   osc.stop(now + 0.14);
 }
 
+// Low sawtooth thud — plays when player takes a hit
+export function playHitSound() {
+  if (!ctx || muted) return;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+
+  const now = ctx.currentTime;
+  osc.type = 'sawtooth';
+  osc.frequency.setValueAtTime(130, now);
+  osc.frequency.exponentialRampToValueAtTime(40, now + 0.18);
+  gain.gain.setValueAtTime(0.32, now);
+  gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+
+  osc.start(now);
+  osc.stop(now + 0.24);
+}
+
+// Short high pop — plays when a projectile destroys an enemy
+export function playEnemyHitSound() {
+  if (!ctx || muted) return;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+
+  const now = ctx.currentTime;
+  osc.type = 'triangle';
+  osc.frequency.setValueAtTime(900, now);
+  osc.frequency.exponentialRampToValueAtTime(380, now + 0.07);
+  gain.gain.setValueAtTime(0.18, now);
+  gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
+
+  osc.start(now);
+  osc.stop(now + 0.1);
+}
+
 // Ascending 3-note arpeggio — plays on evolution
 export function playEvolveSound() {
   if (!ctx || muted) return;

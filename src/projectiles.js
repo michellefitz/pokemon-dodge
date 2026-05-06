@@ -4,7 +4,7 @@ import { player, getStarterDef } from './player.js';
 import { getObstacles } from './obstacles.js';
 import { spawnParticles } from './renderer.js';
 import { handState } from './hands.js';
-import { playFireSound } from './audio.js';
+import { playFireSound, playEnemyHitSound } from './audio.js';
 
 const projectiles = [];
 
@@ -203,6 +203,7 @@ export function checkProjectileCollisions() {
     if (hit) {
       projectiles.splice(i, 1);
       scoreBonus += 2;
+      playEnemyHitSound();
     }
   }
   return scoreBonus;

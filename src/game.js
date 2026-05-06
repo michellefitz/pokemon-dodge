@@ -8,7 +8,7 @@ import { tracking } from './tracking.js';
 import { handState } from './hands.js';
 import { startEvolutionCutscene, updateEvolutionCutscene, drawEvolutionCutscene } from './screens.js';
 import { updateProjectiles, checkProjectileCollisions, drawProjectiles, drawEnergyBars, resetProjectiles } from './projectiles.js';
-import { playEvolveSound } from './audio.js';
+import { playEvolveSound, playHitSound } from './audio.js';
 
 // ============================================================
 // MODULE STATE
@@ -170,6 +170,7 @@ export function updateGame(ts, dt) {
   for (const ob of hits) {
     if (!player.invincible) {
       player.lives--;
+      playHitSound();
       triggerShake(6, 200);
       triggerFlash(COLORS.hitRed, 0.5);
       spawnParticles(player.x, player.y, COLORS.hitRed, 10);
