@@ -133,7 +133,7 @@ export function updateGame(ts, dt) {
 
   // ── Spawn (interval ramps down within each wave) ─────────
   const scoreInWave = score - wave.minScore;
-  const effectiveInterval = Math.max(300, wave.spawnInterval - scoreInWave * 3);
+  const effectiveInterval = Math.max(wave.minInterval ?? 300, wave.spawnInterval - scoreInWave * 3);
   if (ts - lastSpawnTime >= effectiveInterval) {
     lastSpawnTime = ts;
     if (Math.random() < wave.berryChance) {
