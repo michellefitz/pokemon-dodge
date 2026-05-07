@@ -58,7 +58,8 @@ export function hasFiredSinceReset() {
 // Touch-to-shoot for mobile — fires toward the tapped position
 export function touchShoot(tapX, tapY) {
   const now = performance.now();
-  if (now - lastTouchFire < FIRE_INTERVAL) return;
+  const fireInterval = getStarterDef()?.fastFire ? FIRE_INTERVAL_FAST : FIRE_INTERVAL_DEFAULT;
+  if (now - lastTouchFire < fireInterval) return;
 
   // Use left energy for left-side taps, right for right-side
   const side = tapX < player.smoothX ? 'left' : 'right';
